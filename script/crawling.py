@@ -5,26 +5,45 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver import ActionChains
 from selenium.common.exceptions import NoSuchElementException # 페이지 에러 발생
-from selenium.common.exceptions import ElementNotInteractableException # 페이지 에러 발생
 import time
+import re
 
 # 케이카 직영중고차 크롤링
 def CrawlingKcar():
         html = driver.page_source   # html 파싱
         soup = BeautifulSoup(html, 'html.parser')
-        
-        car_list = soup.find_all("div", {"class":"detailInfo srchTimedeal"})
-        tmp_info = {}   # 크롤링한 데이터 임시 저장
+        tmp_info = {}   # 크롤링 데이터 임시 변수        
+        carIds = [] # 자동차 ID 저장 변수
 
-        for idx, item in enumerate(car_list):
+        # 자동차 ID 크롤링       
+        tmpImg = soup.find("div", {"class":"carListWrap"}).find_all("img", {"src":re.compile('https:\\/\\/[\\w.]+\\/([\\w]+|carpicture)')})
+
+        for img in tmpImg:
+            if img['alt'] == "챠량이미지":
+                tmp = img['src'].split('/')
+                
+                if len(tmp) == 10:
+                    carIds.append(tmp[7].split('_')[0])
+                else:
+                    carIds.append(tmp[6].split('_')[1])
+
+        # 자동차 정보 크롤링
+        carList = soup.find_all("div", {"class":"detailInfo srchTimedeal"})
+
+        # tmp_info에 정보와 id를 담는다
+        for idx, (item, ids) in enumerate(zip(carList, carIds)):
+            
+            # 자동차 id
+            carId = int(ids)
+
             # 자동차 이름
             name = item.find("div", "carName").text.strip()
             
             # 매매관련 정보들
             info = item.find("div", "carListFlex").text.strip().split('\n')
             price = info[0].strip()   # 가격
-            details = info[1:]    # 세부사항
-            installment = ""    # 할부 / 렌트 / 보증금 등등
+            details = info[1:]    # 세부사항들
+            installment = ""    # 할부, 렌트, 보증금 등등
             model_year = ""   # 연식
             distance = ""   # 키로수
             fuel = ""   # 연료
@@ -59,14 +78,16 @@ def CrawlingKcar():
                     fuel = tmp[3]
                     area = tmp[4]
 
-            tmp_info[idx+1] = {"name": name, 
-                                    "price": price,
-                                    "installment": installment,
-                                    "year": model_year,
-                                    "distance": distance,
-                                    "fuel": fuel,
-                                    "area": area
-                                    }
+            tmp_info[idx+1] = {
+                                "id" : carId,
+                                "name": name, 
+                                "price": price,
+                                "installment": installment,
+                                "year": model_year,
+                                "distance": distance,
+                                "fuel": fuel,
+                                "area": area
+                                }
 
         return tmp_info
 
@@ -87,13 +108,14 @@ def move_page(page):
 
     return 0
 
+# 시간 비교
+start_time = time.time()
+
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
-chrome_options.add_experimental_option("detach", True)
 
-
-# # 브라우저 창 숨기는 옵션
-# chrome_options.add_argument('headless')
+# 브라우저 창 숨기는 옵션
+chrome_options.add_argument('headless')
 
 # 크롬 드라이버 최신 버전 설정
 service = Service(service=Service(ChromeDriverManager().install()))
@@ -106,8 +128,8 @@ driver.get('https://www.kcar.com/bc/search')
 
 car_info = []   # 크롤링한 자동차 데이터 저장할 리스트
 isLast = 0 # 마지막 페이지 체크
-last_pages = 3  # 마지막 페이지 목록의 시작 태그 번호
 page = 1    # 페이지 번호
+
 
 # 크롤링 시작
 while True:
@@ -117,6 +139,11 @@ while True:
     # 페이지 이동
     isLast = move_page(page)
     
+    if page == 2:
+        for item in car_info:
+            print(item)
+        break
+
     # -1 또는 1이면 종료
     # -1은 에러 발생, 1은 마지막 페이지를 의미
     if isLast == -1 or isLast == 1:
@@ -126,9 +153,14 @@ while True:
     page += 1
     
 if isLast == 1:
+    print(time.time() - start_time)
     size = len(car_info)
-    print(f'총 페이지 : {size}')
+    print(f'총 페이지 : {size}\n')
     print('-----1페이지-----')    
     print(car_info[0])
+    print()
     print(f'-----{size}페이지-----')    
     print(car_info[size-1])
+
+# 1페이지 1번째 매물 찜하기 버튼 경로
+# //*[@id="app"]/div[2]/div[2]/div[2]/div[4]/div[1]/div[6]/div[2]/div/div[1]/ul/li
