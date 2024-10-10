@@ -1,18 +1,19 @@
-from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver import ActionChains
-from selenium.common.exceptions import NoSuchElementException # 페이지 에러 발생
-import time
-import re
+from bs4 import BeautifulSoup   # 크롤링
+from selenium import webdriver  # 크롤링
+from selenium.webdriver.chrome.service import Service   # 크롤링
+from selenium.webdriver.common.by import By # 크롤링
+from webdriver_manager.chrome import ChromeDriverManager    # 크롤링
+from selenium.webdriver import ActionChains # 크롤링
+from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페이지 에러 발생
+import time # 크롤링
+import re   # img url에서 자동차 id 추출
+import pandas as pd # 전처리 - DataFrame으로 변환
+from sqlalchemy import create_engine # DataFrame으로 변환한 데이터 MySQL로 저장
 
 # 케이카 직영중고차 크롤링
-def CrawlingKcar():
+def CrawlingKcar(tmp_info):
         html = driver.page_source   # html 파싱
-        soup = BeautifulSoup(html, 'html.parser')
-        tmp_info = {}   # 크롤링 데이터 임시 변수        
+        soup = BeautifulSoup(html, 'html.parser') 
         carIds = [] # 자동차 ID 저장 변수
 
         # 자동차 ID 크롤링       
@@ -31,7 +32,7 @@ def CrawlingKcar():
         carList = soup.find_all("div", {"class":"detailInfo srchTimedeal"})
 
         # tmp_info에 정보와 id를 담는다
-        for idx, (item, ids) in enumerate(zip(carList, carIds)):
+        for item, ids in zip(carList, carIds):
             
             # 자동차 id
             carId = int(ids)
@@ -41,11 +42,11 @@ def CrawlingKcar():
             
             # 매매관련 정보들
             info = item.find("div", "carListFlex").text.strip().split('\n')
-            price = info[0].strip()   # 가격
+            price = info[0].strip()   # 가격(단위: 만원)
             details = info[1:]    # 세부사항들
             installment = ""    # 할부, 렌트, 보증금 등등
-            model_year = ""   # 연식
-            distance = ""   # 키로수
+            model_year = ""   # 연식(단위: x년 x월식)
+            distance = ""   # 키로수(단위: xkm)
             fuel = ""   # 연료
             area = ""   # 판매 지역
 
@@ -60,7 +61,7 @@ def CrawlingKcar():
                 except:
                     print(f'{name}\n{info}')
                     
-                distance = tmp[5]
+                distance = tmp[5][:-2]
                 fuel = tmp[6]
                 area = tmp[7]
             else:
@@ -74,11 +75,11 @@ def CrawlingKcar():
                     area = tmp[7]
                 else:
                     model_year = tmp[0] + ' ' + tmp[1]
-                    distance = tmp[2]
+                    distance = tmp[2][:-2]
                     fuel = tmp[3]
                     area = tmp[4]
 
-            tmp_info[idx+1] = {
+            tmp_info.append({
                                 "id" : carId,
                                 "name": name, 
                                 "price": price,
@@ -87,9 +88,7 @@ def CrawlingKcar():
                                 "distance": distance,
                                 "fuel": fuel,
                                 "area": area
-                                }
-
-        return tmp_info
+                                })
 
 # 페이지 이동
 def move_page(page):
@@ -134,14 +133,14 @@ page = 1    # 페이지 번호
 # 크롤링 시작
 while True:
 
-    car_info.append(CrawlingKcar())
+    CrawlingKcar(car_info)
 
     # 페이지 이동
     isLast = move_page(page)
     
-    if page == 2:
-        for item in car_info:
-            print(item)
+    if page == 1:
+        df = pd.DataFrame(data=car_info)    # 크롤링한 데이터 DataFrame으로 변환
+        print(df)
         break
 
     # -1 또는 1이면 종료
@@ -153,7 +152,6 @@ while True:
     page += 1
     
 if isLast == 1:
-    print(time.time() - start_time)
     size = len(car_info)
     print(f'총 페이지 : {size}\n')
     print('-----1페이지-----')    
