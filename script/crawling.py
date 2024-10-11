@@ -8,7 +8,8 @@ from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페�
 import time # 크롤링
 import re   # img url에서 자동차 id 추출
 import pandas as pd # 전처리 - DataFrame으로 변환
-from sqlalchemy import create_engine # DataFrame으로 변환한 데이터 MySQL로 저장
+# import pymysql # 전처리
+from sqlalchemy import create_engine # 전처리 - DataFrame으로 변환한 데이터 MySQL로 저장
 
 # 케이카 직영중고차 크롤링
 def CrawlingKcar(tmp_info):
@@ -44,7 +45,7 @@ def CrawlingKcar(tmp_info):
             info = item.find("div", "carListFlex").text.strip().split('\n')
             price = info[0].strip()   # 가격(단위: 만원)
             details = info[1:]    # 세부사항들
-            installment = ""    # 할부, 렌트, 보증금 등등
+            purchase_type = ""    # 할부, 렌트, 보증금 등등
             model_year = ""   # 연식(단위: x년 x월식)
             distance = ""   # 키로수(단위: xkm)
             fuel = ""   # 연료
@@ -54,7 +55,7 @@ def CrawlingKcar(tmp_info):
             if len(details) > 1:
                 tmp = details[1].strip().split()
 
-                installment = details[0].strip() + ' | ' + tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
+                purchase_type = details[0].strip() + ' | ' + tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
 
                 try:
                     model_year = tmp[3] + ' ' + tmp[4]
@@ -68,7 +69,7 @@ def CrawlingKcar(tmp_info):
                 tmp = details[0].strip().split()
                 
                 if tmp[0] == '할부':
-                    installment = tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
+                    purchase_type = tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
                     model_year = tmp[3] + ' ' + tmp[4]
                     distance = tmp[5]
                     fuel = tmp[6]
@@ -83,8 +84,8 @@ def CrawlingKcar(tmp_info):
                                 "id" : carId,
                                 "name": name, 
                                 "price": price,
-                                "installment": installment,
-                                "year": model_year,
+                                "purchase_type": purchase_type,
+                                "model_year": model_year,
                                 "distance": distance,
                                 "fuel": fuel,
                                 "area": area
@@ -107,9 +108,24 @@ def move_page(page):
 
     return 0
 
-# 시간 비교
-start_time = time.time()
+# 크롤링 데이터 전처리 및 SQL로 변환
+def transform(infos):
+    engine = create_engine('mysql+pymysql://root:!CLT-c403s@localhost/car')
 
+    
+    df = pd.DataFrame(data=infos) 
+    df.index += 1   # 인덱스 번호 1부터 시작하도록 설정
+    # 데이터프레임의 index를 컬럼으로 설정 후, 컬럼명을 idx로 변경
+    
+    try:
+        df.reset_index().rename(columns={"index": "idx"}).to_sql(name='car_info', con=engine, if_exists='append', index=False)
+
+    except Exception as e:
+        print(f'오류 발생 : {e} ')
+
+
+# 시간 비교
+start = time.time()
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
 
@@ -129,7 +145,6 @@ car_info = []   # 크롤링한 자동차 데이터 저장할 리스트
 isLast = 0 # 마지막 페이지 체크
 page = 1    # 페이지 번호
 
-
 # 크롤링 시작
 while True:
 
@@ -138,10 +153,10 @@ while True:
     # 페이지 이동
     isLast = move_page(page)
     
-    if page == 1:
-        df = pd.DataFrame(data=car_info)    # 크롤링한 데이터 DataFrame으로 변환
-        print(df)
-        break
+    # if page == 2:
+    #     print(car_info)
+    #     isLast = 1
+    #     break
 
     # -1 또는 1이면 종료
     # -1은 에러 발생, 1은 마지막 페이지를 의미
@@ -151,14 +166,23 @@ while True:
 
     page += 1
     
-if isLast == 1:
-    size = len(car_info)
-    print(f'총 페이지 : {size}\n')
-    print('-----1페이지-----')    
-    print(car_info[0])
-    print()
-    print(f'-----{size}페이지-----')    
-    print(car_info[size-1])
+if isLast == 1:    
+    transform(car_info)
+    end = time.time()
+    print(f"{end - start:5f} sec")
+    print(len(car_info))
+
+    # size = len(car_info)
+    # print(f'총 페이지 : {size}\n')
+    # print('-----1페이지-----')    
+    # print(car_info[0])
+    # print()
+    # print(f'-----{size}페이지-----')    
+    # print(car_info[size-1])
+
+else:
+    print("크롤링 에러")
+
 
 # 1페이지 1번째 매물 찜하기 버튼 경로
 # //*[@id="app"]/div[2]/div[2]/div[2]/div[4]/div[1]/div[6]/div[2]/div/div[1]/ul/li
