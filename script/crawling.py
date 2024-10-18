@@ -6,7 +6,9 @@ from webdriver_manager.chrome import ChromeDriverManager    # 크롤링
 from selenium.webdriver import ActionChains # 크롤링
 from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페이지 에러 발생
 import time # 크롤링
-import re   # img url에서 자동차 id 추출
+import re   # 크롤링 - img url에서 자동차 id 추출
+
+import datetime as dt # 전처리 - model_year
 import pandas as pd # 전처리 - DataFrame으로 변환
 # import pymysql # 전처리
 from sqlalchemy import create_engine # 전처리 - DataFrame으로 변환한 데이터 MySQL로 저장
@@ -17,20 +19,30 @@ def CrawlingKcar(tmp_info):
         soup = BeautifulSoup(html, 'html.parser') 
         carIds = [] # 자동차 ID 저장 변수
 
-        # 자동차 ID 크롤링       
-        tmpImg = soup.find("div", {"class":"carListWrap"}).find_all("img", {"src":re.compile('https:\\/\\/[\\w.]+\\/([\\w]+|carpicture)')})
+        # 자동차 ID 크롤링    
+        try:   
+            tmp = soup.find("div", {"class":"carListWrap"})
+            img = tmp.find_all("img", {"src":re.compile('https:\\/\\/[\\w.]+\\/([\\w]+|carpicture)')})
+        except Exception as e:
+            print(e)
 
-        for img in tmpImg:
-            if img['alt'] == "챠량이미지":
-                tmp = img['src'].split('/')
+        # 자동차 정보 크롤링
+        try:    
+            carList = soup.find_all("div", {"class":"detailInfo srchTimedeal"})
+        except Exception as e:
+            print(e)
+
+
+        # img URL에서 자동차 ID 추출
+        for item in img:
+            if item['alt'] == "챠량이미지":
+                tmp = item['src'].split('/')
                 
                 if len(tmp) == 10:
                     carIds.append(tmp[7].split('_')[0])
                 else:
                     carIds.append(tmp[6].split('_')[1])
 
-        # 자동차 정보 크롤링
-        carList = soup.find_all("div", {"class":"detailInfo srchTimedeal"})
 
         # tmp_info에 정보와 id를 담는다
         for item, ids in zip(carList, carIds):
@@ -43,7 +55,8 @@ def CrawlingKcar(tmp_info):
             
             # 매매관련 정보들
             info = item.find("div", "carListFlex").text.strip().split('\n')
-            price = info[0].strip()   # 가격(단위: 만원)
+
+            price = int(info[0].strip().split()[0].replace(',', '').replace('만원', ''))   # 가격(단위: 만원)
             details = info[1:]    # 세부사항들
             purchase_type = ""    # 할부, 렌트, 보증금 등등
             model_year = ""   # 연식(단위: x년 x월식)
@@ -71,7 +84,7 @@ def CrawlingKcar(tmp_info):
                 if tmp[0] == '할부':
                     purchase_type = tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
                     model_year = tmp[3] + ' ' + tmp[4]
-                    distance = tmp[5]
+                    distance = tmp[5][:-2]
                     fuel = tmp[6]
                     area = tmp[7]
                 else:
@@ -79,6 +92,18 @@ def CrawlingKcar(tmp_info):
                     distance = tmp[2][:-2]
                     fuel = tmp[3]
                     area = tmp[4]
+
+            # 거리 - 천단위 콤마 제거 및 정수로 형변환
+            distance = int(distance.replace(',', ''))
+
+            # 연식 - (xx년형) 제거 및 xx-xx 형식으로 변경
+            tmp_idx = model_year.find('(')
+            if tmp_idx != -1:  model_year = model_year[:tmp_idx]
+            
+            model_year = model_year.replace("년 ", "-").replace("월식","")
+            tmp_year = dt.datetime.strptime(model_year, '%y-%m').date()
+            model_year = tmp_year.strftime("%Y-%m")
+
 
             tmp_info.append({
                                 "id" : carId,
@@ -92,40 +117,52 @@ def CrawlingKcar(tmp_info):
                                 })
 
 # 페이지 이동
-def move_page(page):
+def move_page(p):
+    # 페이지 별 태그 번호 계산
+    tmp = p
+
+    if tmp % 10 == 1:
+        tmp = 12
+    elif tmp % 10 == 0:
+        tmp = 11
+    else:
+        tmp = (tmp % 10) + 1
+
+    # 다음 페이지 클릭
     action = ActionChains(driver)
 
     try:
-        button = driver.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[2]/div[2]/div[4]/div[1]/div[7]/div/ul/li[12]/button')
-    except NoSuchElementException:  # 다음 페이지 버튼이 없는 경우 => 마지막 페이지를 의미
-        return 1 
-    except: # 크롤링 중간에 오류 발생한 경우
-        print(f'{page} Page Error')
+        button = driver.find_element(By.XPATH, f'//*[@id="app"]/div[2]/div[2]/div[2]/div[4]/div[1]/div[7]/div/ul/li[{tmp}]')
+        
+    except NoSuchElementException as e: # 크롤링 중간에 오류 발생한 경우
+        print(f'{e} At Page {tmp}')
         return -1
 
-    action.click(button).perform()   
-    time.sleep(1)
+    # 각 페이지 번호의 li 태그를 클릭하는 걸로 변경
+    # 페이지 번호가 11부터는 mod 연산 사용
+    # 페이지 번호의 나머지가 1인 경우는 다음 버튼의 li 태그를 클릭하도록 li의 인덱스를 12로 설정
+    # 만약, mod 연산의 결과를 넣은 li 태그가 없거나 다음 버튼이 없다면 마지막 페이지로 의미
+    # ex) < 111 112 > / < 211 212 213 214 215 216 217 218 219 210 >
 
-    return 0
+    action.click(button).perform()   
+    driver.implicitly_wait(10)
 
 # 크롤링 데이터 전처리 및 SQL로 변환
 def transform(infos):
     engine = create_engine('mysql+pymysql://root:!CLT-c403s@localhost/car')
 
-    
     df = pd.DataFrame(data=infos) 
     df.index += 1   # 인덱스 번호 1부터 시작하도록 설정
-    # 데이터프레임의 index를 컬럼으로 설정 후, 컬럼명을 idx로 변경
+    df.to_csv("C:/Users/pirou/OneDrive/바탕 화면/carInfo.csv")
     
     try:
+        # 데이터프레임의 index를 컬럼으로 설정 후, 컬럼명을 idx로 변경
         df.reset_index().rename(columns={"index": "idx"}).to_sql(name='car_info', con=engine, if_exists='append', index=False)
 
     except Exception as e:
         print(f'오류 발생 : {e} ')
 
 
-# 시간 비교
-start = time.time()
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
 
@@ -144,44 +181,69 @@ driver.get('https://www.kcar.com/bc/search')
 car_info = []   # 크롤링한 자동차 데이터 저장할 리스트
 isLast = 0 # 마지막 페이지 체크
 page = 1    # 페이지 번호
+total_KC = 0 # 전체 자동차 수
+
+# 시간 비교
+start = time.time()
 
 # 크롤링 시작
 while True:
-
     CrawlingKcar(car_info)
-
-    # 페이지 이동
-    isLast = move_page(page)
     
-    # if page == 2:
-    #     print(car_info)
-    #     isLast = 1
-    #     break
+    # 페이지 이동
+    page += 1
+    isLast = move_page(page)
+
+    html = driver.page_source   
+    soup = BeautifulSoup(html, 'html.parser') 
+    paging = soup.find("div", {"class" : "paging"}).find_all("li")
+    pages = dict(enumerate([int(*p.text.split()) for p in paging], start = 1))
+
+    # 현재 페이지가 페이지 목록에 없는 경우 => 마지막 페이지라는 의미
+    if page not in pages.values():
+        print(pages)
+        print(page)
+
+        # 전체 자동차 개수
+        total = soup.find("h2", {"class" : "subTitle mt64 ft22"})
+        total_KC = int(total.text.strip().split()[-1][:-1].replace(",", ""))
+        isLast = 1
 
     # -1 또는 1이면 종료
     # -1은 에러 발생, 1은 마지막 페이지를 의미
-    if isLast == -1 or isLast == 1:
+    if isLast == 1:
         driver.quit()
         break
 
-    page += 1
+    if isLast == -1:
+        print(f'{page - 1} Page Error')
+        break
     
 if isLast == 1:    
-    transform(car_info)
     end = time.time()
     print(f"{end - start:5f} sec")
-    print(len(car_info))
+    print(f'전체 페이지 : {page - 1}')
+    
+    size = len(car_info)
+    print(f'전체 자동차 개수 : {size}\n')
+    print('-----1번-----')    
+    print(car_info[0])
+    print()
+    print(f'-----{size}번-----')    
+    print(car_info[size-1])
 
-    # size = len(car_info)
-    # print(f'총 페이지 : {size}\n')
-    # print('-----1페이지-----')    
-    # print(car_info[0])
-    # print()
-    # print(f'-----{size}페이지-----')    
-    # print(car_info[size-1])
+    if total_KC == size:
+        transform(car_info)
+    else:
+        print("자동차 전체 개수가 일치하지 않습니다.")
 
 else:
+    end = time.time()
+    print(f"{end - start:5f} sec")
     print("크롤링 에러")
+
+
+
 
 
 # 1페이지 1번째 매물 찜하기 버튼 경로
