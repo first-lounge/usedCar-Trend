@@ -10,8 +10,10 @@ import re   # 크롤링 - img url에서 자동차 id 추출
 
 import datetime as dt # 전처리 - model_year
 import pandas as pd # 전처리 - DataFrame으로 변환
-# import pymysql # 전처리
-from sqlalchemy import create_engine # 전처리 - DataFrame으로 변환한 데이터 MySQL로 저장
+import pymysql # 전처리
+from sqlalchemy import create_engine, text # 전처리 - DataFrame으로 변환한 데이터 MySQL로 저장
+
+import logging
 
 # 케이카 직영중고차 크롤링
 def CrawlingKcar(tmp_info):
@@ -19,15 +21,10 @@ def CrawlingKcar(tmp_info):
         soup = BeautifulSoup(html, 'html.parser') 
         carIds = [] # 자동차 ID 저장 변수
 
-        # 자동차 ID 크롤링    
+        # 자동차 ID & 정보 크롤링    
         try:   
             tmp = soup.find("div", {"class":"carListWrap"})
-            img = tmp.find_all("img", {"src":re.compile('https:\\/\\/[\\w.]+\\/([\\w]+|carpicture)')})
-        except Exception as e:
-            print(e)
-
-        # 자동차 정보 크롤링
-        try:    
+            img = tmp.find_all("img", {"src":re.compile('https:\\/\\/[\\w.]+\\/([\\w]+|carpicture)')})   
             carList = soup.find_all("div", {"class":"detailInfo srchTimedeal"})
         except Exception as e:
             print(e)
@@ -104,7 +101,6 @@ def CrawlingKcar(tmp_info):
             tmp_year = dt.datetime.strptime(model_year, '%y-%m').date()
             model_year = tmp_year.strftime("%Y-%m")
 
-
             tmp_info.append({
                                 "id" : carId,
                                 "name": name, 
@@ -138,27 +134,36 @@ def move_page(p):
         print(f'{e} At Page {tmp}')
         return -1
 
-    # 각 페이지 번호의 li 태그를 클릭하는 걸로 변경
-    # 페이지 번호가 11부터는 mod 연산 사용
-    # 페이지 번호의 나머지가 1인 경우는 다음 버튼의 li 태그를 클릭하도록 li의 인덱스를 12로 설정
-    # 만약, mod 연산의 결과를 넣은 li 태그가 없거나 다음 버튼이 없다면 마지막 페이지로 의미
-    # ex) < 111 112 > / < 211 212 213 214 215 216 217 218 219 210 >
-
     action.click(button).perform()   
     driver.implicitly_wait(10)
 
 # 크롤링 데이터 전처리 및 SQL로 변환
-def transform(infos):
-    engine = create_engine('mysql+pymysql://root:!CLT-c403s@localhost/car')
+def load(infos):
+    db_connections = f'mysql+pymysql://root:!CLT-c403s@localhost/car'
+    engine = create_engine(db_connections)
+    conn = engine.connect()
 
     df = pd.DataFrame(data=infos) 
-    df.index += 1   # 인덱스 번호 1부터 시작하도록 설정
-    df.to_csv("C:/Users/pirou/OneDrive/바탕 화면/carInfo.csv")
-    
-    try:
-        # 데이터프레임의 index를 컬럼으로 설정 후, 컬럼명을 idx로 변경
-        df.reset_index().rename(columns={"index": "idx"}).to_sql(name='car_info', con=engine, if_exists='append', index=False)
+    df.to_csv('carInfo.csv')
 
+    try:
+        # crawling 테이블에 삽입
+        df.to_sql(name='crawling', con=engine, if_exists='append', index=False)
+
+        # total 테이블과 비교 후, total 테이블에 없는 값들을 삽입
+        sql = """
+        INSERT INTO total(idx, id, name, price, purchase_type, model_year, distance, fuel, area)
+        SELECT idx, id, name, price, purchase_type, model_year, distance, fuel, area
+        FROM crawling
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM total
+            WHERE total.id = crawling.id
+        )
+        """
+        conn.execute(text(sql))
+        conn.commit()
+        conn.close()
     except Exception as e:
         print(f'오류 발생 : {e} ')
 
@@ -194,6 +199,7 @@ while True:
     page += 1
     isLast = move_page(page)
 
+    # 현재 페이지가 페이지 목록에 있는지 체크
     html = driver.page_source   
     soup = BeautifulSoup(html, 'html.parser') 
     paging = soup.find("div", {"class" : "paging"}).find_all("li")
@@ -218,13 +224,13 @@ while True:
     if isLast == -1:
         print(f'{page - 1} Page Error')
         break
-    
+
+size = len(car_info)
+# and total_KC == size
 if isLast == 1:    
     end = time.time()
     print(f"{end - start:5f} sec")
     print(f'전체 페이지 : {page - 1}')
-    
-    size = len(car_info)
     print(f'전체 자동차 개수 : {size}\n')
     print('-----1번-----')    
     print(car_info[0])
@@ -232,18 +238,21 @@ if isLast == 1:
     print(f'-----{size}번-----')    
     print(car_info[size-1])
 
-    if total_KC == size:
-        transform(car_info)
-    else:
-        print("자동차 전체 개수가 일치하지 않습니다.")
+    # 크롤링한 데이터를 SQL로 LOAD
+    load(car_info)
 
 else:
     end = time.time()
     print(f"{end - start:5f} sec")
+    print(f'전체 페이지 : {page - 1}')
+    print(f'전체 자동차 개수 : {size}\n')
+    print('-----1번-----')    
+    print(car_info[0])
+    print()
+    print(f'-----{size}번-----')    
+    print(car_info[size-1])
     print("크롤링 에러")
-
-
-
+    print("자동차 전체 개수가 일치하지 않습니다.")
 
 
 # 1페이지 1번째 매물 찜하기 버튼 경로
