@@ -144,16 +144,17 @@ def load(infos):
     conn = engine.connect()
 
     df = pd.DataFrame(data=infos) 
-    df.to_csv('carInfo.csv')
+    df.index += 1
+    df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfo.csv')
 
     try:
         # crawling 테이블에 삽입
-        df.to_sql(name='crawling', con=engine, if_exists='append', index=False)
+        df.reset_index().rename(columns={"index" : "idx"}).to_sql(name='crawling', con=engine, if_exists='replace', index=False)
 
         # total 테이블과 비교 후, total 테이블에 없는 값들을 삽입
         sql = """
-        INSERT INTO total(idx, id, name, price, purchase_type, model_year, distance, fuel, area)
-        SELECT idx, id, name, price, purchase_type, model_year, distance, fuel, area
+        INSERT INTO total(id, name, price, purchase_type, model_year, distance, fuel, area, url)
+        SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url
         FROM crawling
         WHERE NOT EXISTS (
             SELECT 1
