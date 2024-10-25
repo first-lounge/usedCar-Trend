@@ -43,7 +43,9 @@ def CrawlingKcar(tmp_info):
 
         # tmp_info에 정보와 id를 담는다
         for item, ids in zip(carList, carIds):
-            
+            # 판매 url
+            url = "https://www.kcar.com/bc/detail/carInfoDtl?i_sCarCd=EC" + ids
+
             # 자동차 id
             carId = int(ids)
 
@@ -109,7 +111,8 @@ def CrawlingKcar(tmp_info):
                                 "model_year": model_year,
                                 "distance": distance,
                                 "fuel": fuel,
-                                "area": area
+                                "area": area,
+                                "url" : url
                                 })
 
 # 페이지 이동
