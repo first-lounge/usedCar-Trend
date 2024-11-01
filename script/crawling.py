@@ -13,7 +13,6 @@ import pandas as pd # 전처리 - DataFrame으로 변환
 import pymysql # 전처리
 from sqlalchemy import create_engine, text # 전처리 - DataFrame으로 변환한 데이터 MySQL로 저장
 
-import logging
 
 # 케이카 직영중고차 크롤링
 def CrawlingKcar(tmp_info):
@@ -60,7 +59,7 @@ def CrawlingKcar(tmp_info):
         distance = ""   # 키로수(단위: xkm)
         fuel = ""   # 연료
         area = ""   # 판매 지역
-        crawl_at = dt.today().strftime("%Y-%m-%d") # 크롤링 시작 시각
+        crawled_at = dt.today().strftime("%Y-%m-%d") # 크롤링 시작 시각
 
         # 할부 여부 체크
         if len(details) > 1:
@@ -112,7 +111,7 @@ def CrawlingKcar(tmp_info):
                             "fuel": fuel,
                             "area": area,
                             "url" : url,
-                            "crawl_at" : crawl_at
+                            "crawled_at" : crawled_at
                             })
 
 # 페이지 이동
@@ -137,7 +136,7 @@ def move_page(p):
         print(f'{e} At Page {p}')
         return -1
 
-    action.click(button).perform()   
+    action.click(button).perform()
     driver.implicitly_wait(10)
 
 # 크롤링 데이터 전처리 및 SQL로 변환
@@ -150,14 +149,18 @@ def load(infos):
     df.index += 1
     df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfo3.csv')
 
+    if df.duplicated().sum():
+        print("Duplicated Data Exists")
+        df.drop_duplicates(inplace=True)
+
     try:
         # crawling 테이블에 삽입
         df.reset_index().rename(columns={"index" : "idx"}).to_sql(name='crawling', con=engine, if_exists='append', index=False)
 
         # total 테이블과 비교 후, total 테이블에 없는 값들을 삽입
         query1 = """
-        INSERT IGNORE INTO total(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawl_at)
-        SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawl_at
+        INSERT INTO total(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
+        SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at
         FROM crawling
         WHERE NOT EXISTS (
             SELECT 1
@@ -169,8 +172,8 @@ def load(infos):
 
         # crawling 테이블에 없지만 total 테이블에 있는 값들은 sold 테이블 삽입
         query2 = """
-        INSERT INTO sold(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawl_at)
-        SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawl_at
+        INSERT INTO sold(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
+        SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at
         FROM total
         WHERE NOT EXISTS (
             SELECT 1
@@ -189,7 +192,6 @@ def load(infos):
         conn.close()
     except Exception as e:
         print(f'오류 발생 : {e} ')
-
 
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
@@ -214,39 +216,45 @@ page = 1    # 페이지 번호
 # 크롤링 시작
 while True:
     CrawlingKcar(car_info)
+
+    html = driver.page_source   
+    soup = BeautifulSoup(html, 'html.parser') 
+    nextBtn = soup.find("div", {"class" : "paging"}).find_all("img")    
+    paging = soup.find("div", {"class" : "paging"}).find_all("li")
+    pages = dict(enumerate([int(*p.text.split()) for p in paging], start = 1))
+
+    try:
+        if nextBtn[-1]['alt'] != '다음':
+            print(nextBtn[-1]['alt'])
+            print(page)
+
+            # 전체 자동차 개수
+            total = soup.find("h2", {"class" : "subTitle mt64 ft22"})
+            total_KC = int(total.text.strip().split()[-1][:-1].replace(",", ""))
+            isLast = 1
+            break
+    except Exception as e:
+        print(e)
+        print(nextBtn)
+        print(pages)
+        break
     
     # 페이지 이동
     page += 1
     isLast = move_page(page)
+    time.sleep(1.5)
 
-    # 현재 페이지가 페이지 목록에 있는지 체크
-    html = driver.page_source   
-    soup = BeautifulSoup(html, 'html.parser') 
-    paging = soup.find("div", {"class" : "paging"}).find_all("li")
-    pages = dict(enumerate([int(*p.text.split()) for p in paging], start = 1))
-
-    # 현재 페이지가 페이지 목록에 없는 경우 => 마지막 페이지라는 의미
-    if page not in pages.values():
-        print(pages)
-        print(page)
-
-        # 전체 자동차 개수
-        total = soup.find("h2", {"class" : "subTitle mt64 ft22"})
-        total_KC = int(total.text.strip().split()[-1][:-1].replace(",", ""))
-
-        isLast = 1
-
-    # -1 또는 1이면 종료
-    # -1은 에러 발생, 1은 마지막 페이지를 의미
-    if isLast == 1 or  isLast == -1:
-        driver.quit()
+    if isLast == -1:
+        print("Crawling ERROR")
         break
 
 size = len(car_info)
 
-if isLast == 1 and total_KC == size:    
-    print(f'전체 페이지 : {page - 1}')
-    print(f'전체 자동차 개수 : {size}\n')
+if isLast == 1:    
+    print(f'isLast : {isLast}')
+    print(f'Total Page : {page}')
+    print(f'Total Car Cnt : {total_KC}\n')
+    print(f'crawled Data Cnt : {size}\n')
     print('-----1번-----')    
     print(car_info[0])
     print()
@@ -257,10 +265,10 @@ if isLast == 1 and total_KC == size:
     load(car_info)
 
 else:
-    print(f'Page Error At {page - 1} ')
     print(f'isLast : {isLast}')
-    print(f'전체 자동차 개수 : {total_KC}\n')
-    print(f'크롤링 개수 : {size}\n')
+    print(f'Page Error At {page} ')
+    print(f'Total Car cnt : {total_KC}\n')
+    print(f'crawled Data Cnt : {size}\n')
     print('-----1번-----')    
     print(car_info[0])
     print()
