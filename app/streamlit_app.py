@@ -1,17 +1,24 @@
 import streamlit as st
 import pandas as pd
-
+from utils.query import get_cnt
 def main():
+    conn = st.connection("mysql", type="sql")
+    
+    total = get_cnt()
     st.title("중고차 매매 데이터")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("K Car 직영중고차", f'{total}', f'{12}')
+    c2.metric("K Car 직영중고차 xxxx대", 15)
+    c3.metric("일간", 15)
+    c4.metric("주간", 15)
 
-    table_name = st.secrets["database"]["table_name"]
+    st.divider()
+
+    t2 = st.secrets["database"]["t2_name"]
     with st.spinner("Loading..."):
-        conn = st.connection("mysql", type="sql")
-
-
         query = f"""
         SELECT *
-        FROM `{table_name}`
+        FROM `{t2}`
         WHERE crawled_at = DATE(CURDATE() - INTERVAL 7 DAY)
         """
         
@@ -20,7 +27,7 @@ def main():
     
         day = f"""
         SELECT *
-        FROM `{table_name}`
+        FROM `{t2}`
         WHERE crawled_at = DATE(CURDATE() - INTERVAL 1 DAY)
         """
         
