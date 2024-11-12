@@ -1,16 +1,16 @@
 import streamlit as st
 import pandas as pd
-from utils.query import get_cnt
+from utils.query import get_cnts
 def main():
     conn = st.connection("mysql", type="sql")
     
-    total = get_cnt()
+    total, daily, weekly = get_cnts()
+
     st.title("중고차 매매 데이터")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("K Car 직영중고차", f'{total}', f'{12}')
-    c2.metric("K Car 직영중고차 xxxx대", 15)
-    c3.metric("일간", 15)
-    c4.metric("주간", 15)
+    c1, c3, c4 = st.columns(3)
+    c1.metric("K Car 직영중고차", f'{total[0]}', f'{total[1]}')
+    c3.metric("일간", f'{daily[0]}', f'{daily[0] - daily[1]}')
+    c4.metric("주간", f'{weekly[0]}', f'{weekly[0] - weekly[1]}')
 
     st.divider()
 
@@ -28,7 +28,7 @@ def main():
         day = f"""
         SELECT *
         FROM `{t2}`
-        WHERE crawled_at = DATE(CURDATE() - INTERVAL 1 DAY)
+        WHERE crawled_at = CURDATE()
         """
         
         daily = pd.DataFrame(conn.query(day))
