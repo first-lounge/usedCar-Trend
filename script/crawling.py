@@ -159,7 +159,7 @@ def load(infos):
 
         # total 테이블과 비교 후, total 테이블에 없는 값들을 삽입
         query1 = """
-        INSERT INTO total(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
+        INSERT IGNORE INTO total(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
         SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at
         FROM crawling
         WHERE NOT EXISTS (
@@ -172,7 +172,7 @@ def load(infos):
 
         # crawling 테이블에 없지만 total 테이블에 있는 값들은 sold 테이블 삽입
         query2 = """
-        INSERT INTO sold(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
+        INSERT IGNORE INTO sold(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
         SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at
         FROM total
         WHERE NOT EXISTS (
@@ -215,6 +215,7 @@ page = 1    # 페이지 번호
 
 # 크롤링 시작
 while True:
+    time.sleep(1.5)
     CrawlingKcar(car_info)
 
     html = driver.page_source   
@@ -242,7 +243,6 @@ while True:
     # 페이지 이동
     page += 1
     isLast = move_page(page)
-    time.sleep(1.5)
 
     if isLast == -1:
         print("Crawling ERROR")
@@ -253,13 +253,8 @@ size = len(car_info)
 if isLast == 1:    
     print(f'isLast : {isLast}')
     print(f'Total Page : {page}')
-    print(f'Total Car Cnt : {total_KC}\n')
-    print(f'crawled Data Cnt : {size}\n')
-    print('-----1번-----')    
-    print(car_info[0])
-    print()
-    print(f'-----{size}번-----')    
-    print(car_info[size-1])
+    print(f'Total Car Cnt : {total_KC}')
+    print(f'crawled Data Cnt : {size}')
 
     # 크롤링한 데이터를 SQL로 LOAD
     load(car_info)
@@ -267,13 +262,8 @@ if isLast == 1:
 else:
     print(f'isLast : {isLast}')
     print(f'Page Error At {page} ')
-    print(f'Total Car cnt : {total_KC}\n')
-    print(f'crawled Data Cnt : {size}\n')
-    print('-----1번-----')    
-    print(car_info[0])
-    print()
-    print(f'-----{size}번-----')    
-    print(car_info[size-1])
+    print(f'Total Car cnt : {total_KC}')
+    print(f'crawled Data Cnt : {size}')
 
     df = pd.DataFrame(data=car_info) 
     df.index += 1
