@@ -18,7 +18,7 @@ def info_transform(df):
             
     return df
 
-def load(infos):
+def load(info):
     # sql 연결
     config = configparser.ConfigParser()
     config.read('C:/Users/pirou/OneDrive/바탕 화면/중고차 매매 프로젝트/settings.ini')
@@ -27,7 +27,7 @@ def load(infos):
     engine = create_engine(db_connections)
     conn = engine.connect()
 
-    df = pd.DataFrame(data=infos)
+    df = pd.DataFrame(data=info)
     df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfos1.csv')
 
     if df.duplicated().sum():
