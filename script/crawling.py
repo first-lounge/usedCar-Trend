@@ -1,18 +1,19 @@
+import re   # 크롤링 - img url에서 자동차 id 추출
+import time # 크롤링
+import pymysql # 전처리
+import configparser   # ini 파일 읽기
+import pandas as pd # 전처리 - DataFrame으로 변환
+
 from bs4 import BeautifulSoup   # 크롤링
 from selenium import webdriver  # 크롤링
-from selenium.webdriver.chrome.service import Service   # 크롤링
-from selenium.webdriver.common.by import By # 크롤링
-from webdriver_manager.chrome import ChromeDriverManager    # 크롤링
-from selenium.webdriver import ActionChains # 크롤링
-from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페이지 에러 발생
-import time # 크롤링
-import re   # 크롤링 - img url에서 자동차 id 추출
-
 from datetime import datetime as dt # 전처리 - model_year
-import pandas as pd # 전처리 - DataFrame으로 변환
-import pymysql # 전처리
 from sqlalchemy import create_engine, text # 전처리 - DataFrame으로 변환한 데이터 MySQL로 저장
-
+from selenium.webdriver.common.by import By # 크롤링
+from selenium.webdriver import ActionChains # 크롤링
+from tl_process import load   # 변환
+from selenium.webdriver.chrome.service import Service   # 크롤링
+from webdriver_manager.chrome import ChromeDriverManager    # 크롤링
+from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페이지 에러 발생
 
 # 케이카 직영중고차 크롤링
 def CrawlingKcar(tmp_info):
@@ -105,7 +106,7 @@ def CrawlingKcar(tmp_info):
                             "id" : carId,
                             "name": name, 
                             "price": price,
-                            "purchase_type": purchase_type,
+                            "pc_type": purchase_type,
                             "model_year": model_year,
                             "distance": distance,
                             "fuel": fuel,
@@ -138,60 +139,6 @@ def move_page(p):
 
     action.click(button).perform()
     driver.implicitly_wait(10)
-
-# 크롤링 데이터 전처리 및 SQL로 변환
-def load(infos):
-    db_connections = f'mysql+pymysql://root:!CLT-c403s@localhost/car'
-    engine = create_engine(db_connections)
-    conn = engine.connect()
-
-    df = pd.DataFrame(data=infos) 
-    df.index += 1
-    df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfo3.csv')
-
-    if df.duplicated().sum():
-        print("Duplicated Data Exists")
-        df.drop_duplicates(inplace=True)
-
-    try:
-        # crawling 테이블에 삽입
-        df.reset_index().rename(columns={"index" : "idx"}).to_sql(name='crawling', con=engine, if_exists='append', index=False)
-
-        # total 테이블과 비교 후, total 테이블에 없는 값들을 삽입
-        query1 = """
-        INSERT IGNORE INTO total(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
-        SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at
-        FROM crawling
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM total
-            WHERE total.id = crawling.id
-        )
-        """
-        conn.execute(text(query1))
-
-        # crawling 테이블에 없지만 total 테이블에 있는 값들은 sold 테이블 삽입
-        query2 = """
-        INSERT IGNORE INTO sold(id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at)
-        SELECT id, name, price, purchase_type, model_year, distance, fuel, area, url, crawled_at
-        FROM total
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM crawling
-            WHERE crawling.id = total.id
-        )
-        """
-        conn.execute(text(query2))
-
-        query3 = """
-        TRUNCATE TABLE crawling
-        """
-        conn.execute(text(query3))
-
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f'오류 발생 : {e} ')
 
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
@@ -255,8 +202,8 @@ if isLast == 1:
     print(f'Total Page : {page}')
     print(f'Total Car Cnt : {total_KC}')
     print(f'crawled Data Cnt : {size}')
-
-    # 크롤링한 데이터를 SQL로 LOAD
+    
+    # 크롤링한 데이터 전처리 및 SQL로 삽입
     load(car_info)
 
 else:
