@@ -1,16 +1,13 @@
 import re   # 크롤링 - img url에서 자동차 id 추출
 import time # 크롤링
-import pymysql # 전처리
-import configparser   # ini 파일 읽기
 import pandas as pd # 전처리 - DataFrame으로 변환
 
+from tl_process import load   # 변환
 from bs4 import BeautifulSoup   # 크롤링
 from selenium import webdriver  # 크롤링
 from datetime import datetime as dt # 전처리 - model_year
-from sqlalchemy import create_engine, text # 전처리 - DataFrame으로 변환한 데이터 MySQL로 저장
 from selenium.webdriver.common.by import By # 크롤링
 from selenium.webdriver import ActionChains # 크롤링
-from tl_process import load   # 변환
 from selenium.webdriver.chrome.service import Service   # 크롤링
 from webdriver_manager.chrome import ChromeDriverManager    # 크롤링
 from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페이지 에러 발생
@@ -57,7 +54,7 @@ def CrawlingKcar(tmp_info):
         details = info[1:]    # 세부사항들
         purchase_type = ""    # 할부, 렌트, 보증금 등등
         model_year = ""   # 연식(단위: x년 x월식)
-        distance = ""   # 키로수(단위: xkm)
+        km = ""   # 키로수(단위: xkm)
         fuel = ""   # 연료
         area = ""   # 판매 지역
         crawled_at = dt.today().strftime("%Y-%m-%d") # 크롤링 시작 시각
@@ -73,7 +70,7 @@ def CrawlingKcar(tmp_info):
             except:
                 print(f'{name}\n{info}')
                 
-            distance = tmp[5][:-2]
+            km = tmp[5][:-2]
             fuel = tmp[6]
             area = tmp[7]
         else:
@@ -82,17 +79,17 @@ def CrawlingKcar(tmp_info):
             if tmp[0] == '할부':
                 purchase_type = tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
                 model_year = tmp[3] + ' ' + tmp[4]
-                distance = tmp[5][:-2]
+                km = tmp[5][:-2]
                 fuel = tmp[6]
                 area = tmp[7]
             else:
                 model_year = tmp[0] + ' ' + tmp[1]
-                distance = tmp[2][:-2]
+                km = tmp[2][:-2]
                 fuel = tmp[3]
                 area = tmp[4]
 
         # 거리 - 천단위 콤마 제거 및 정수로 형변환
-        distance = int(distance.replace(',', ''))
+        km = int(km.replace(',', ''))
 
         # 연식 - (xx년형) 제거 및 xx-xx 형식으로 변경
         tmp_idx = model_year.find('(')
@@ -108,7 +105,7 @@ def CrawlingKcar(tmp_info):
                             "price": price,
                             "pc_type": purchase_type,
                             "model_year": model_year,
-                            "distance": distance,
+                            "km": km,
                             "fuel": fuel,
                             "area": area,
                             "url" : url,

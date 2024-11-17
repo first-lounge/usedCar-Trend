@@ -28,7 +28,7 @@ def load(info):
     conn = engine.connect()
 
     df = pd.DataFrame(data=info)
-    df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfos1.csv')
+    df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfos.csv')
 
     if df.duplicated().sum():
         print("Duplicated Data Exists")
@@ -43,60 +43,60 @@ def load(info):
 
         # crawling 테이블과 main 테이블 비교 후, main 테이블에 없는 값들 삽입
         query1 = """
-        INSERT IGNORE INTO main_tmp(id, name, crawled_at)
-        SELECT id, name, crawled_at
+        INSERT IGNORE INTO main(id, name, model_year, km, fuel, area, url)
+        SELECT id, name, model_year, km, fuel, area, url
         FROM crawling
         WHERE NOT EXISTS (
             SELECT 1
-            FROM main_tmp
-            WHERE main_tmp.id = crawling.id
+            FROM main
+            WHERE main.id = crawling.id
         )
         """
         conn.execute(text(query1))
 
-        # crawling 테이블과 car_info 테이블 비교 후, car_info 테이블에 없는 값들 삽입
+        # crawling 테이블과 price_info 테이블 비교 후, price_info 테이블에 없는 값들 삽입
         query2 = """
-        INSERT IGNORE INTO car_info_tmp(id, model_year, distance, fuel, area, url)
-        SELECT id, model_year, distance, fuel, area, url
-        FROM crawling
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM car_info_tmp
-            WHERE car_info_tmp.id = crawling.id
-        )
-        """
-        conn.execute(text(query2))
-
-        # main 테이블과 crawling 테이블 비교 후, 판매 여부 업데이트
-        query = """
-        UPDATE main_tmp mt
-        SET mt.is_sold = 1
-        WHERE NOT EXISTS(
-            SELECT 1
-            FROM crawling
-            WHERE crawling.id = mt.id
-        )
-        """
-        conn.execute(text(query))
-        
-        # price_info 테이블에 없는 새로운 차량들 삽입
-        query3 = """
-        INSERT INTO price_info_tmp(id, pc_type, monthly_cost, price)
+        INSERT IGNORE INTO price_info(id, pc_type, monthly_cost, price)
         SELECT id, pc_type, monthly_cost, price
         FROM crawling
         WHERE NOT EXISTS (
             SELECT 1
-            FROM price_info_tmp
-            WHERE price_info_tmp.id = crawling.id
+            FROM price_info
+            WHERE price_info.id = crawling.id
+        )
+        """
+        conn.execute(text(query2))
+
+        # crawling 테이블과 sales_list 테이블 비교 후, sales_list에 없는 값들 삽입
+        query3 = """
+        INSERT INTO sales_list(id, crawled_at)
+        SELECT DISTINCT id, crawled_at
+        FROM crawling
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM sales_list
+            WHERE sales_list.id = crawling.id
         )
         """
         conn.execute(text(query3))
-        
-        # 모든 과정을 마친 후 crawling 테이블 전체 초기화
+
+        # sales_list 테이블과 crawling 테이블 비교 후, is_sold 컬럼 업데이트
         query4 = """
-        TRUNCATE TABLE crawling
+        UPDATE sales_list sl
+        SET sl.is_sold = 1
+        WHERE NOT EXISTS(
+            SELECT 1
+            FROM crawling
+            WHERE crawling.id = sl.id
+        )
         """
         conn.execute(text(query4))
+        
+        # 모든 과정을 마친 후 crawling 테이블 전체 초기화
+        query5 = """
+        TRUNCATE TABLE crawling
+        """
+        conn.execute(text(query5))
 
         conn.commit()
         conn.close()
