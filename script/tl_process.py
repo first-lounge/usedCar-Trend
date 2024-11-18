@@ -56,7 +56,7 @@ def load(info):
 
         # crawling 테이블과 price_info 테이블 비교 후, price_info 테이블에 없는 값들 삽입
         query2 = """
-        INSERT IGNORE INTO price_info(id, pc_type, monthly_cost, price)
+        INSERT INTO price_info(id, pc_type, monthly_cost, price)
         SELECT id, pc_type, monthly_cost, price
         FROM crawling
         WHERE NOT EXISTS (
@@ -83,7 +83,7 @@ def load(info):
         # sales_list 테이블과 crawling 테이블 비교 후, is_sold 컬럼 업데이트
         query4 = """
         UPDATE sales_list sl
-        SET sl.is_sold = 1
+        SET sl.is_sold = 1, sl.sold_at = CURDATE()
         WHERE NOT EXISTS(
             SELECT 1
             FROM crawling
