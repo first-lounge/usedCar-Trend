@@ -104,12 +104,15 @@ def get_cnts():
 
 def get_names():
     query = """
-    SELECT name
-    FROM main
+        SELECT *
+        FROM main m
+        JOIN sales_list s
+        ON m.id = s.id
+        WHERE s.is_sold = 1
     """
-    result = pd.read_sql(query, conn)
-    result['brand'] = result['name'].str.split().str[0]
-    result['names'] = result['name'].str.split().str[1:3].str.join(' ')
-    result.drop('name', axis=1, inplace=True)
+    tmp = pd.read_sql(query, conn)
+    tmp['brand'] = tmp['name'].str.split().str[0]
+    tmp['names'] = tmp['name'].str.split().str[1:4].str.join(' ')
+    result = tmp[['brand', 'names']]
 
     return result
