@@ -13,7 +13,7 @@ conn = st.connection("mysql", type="sql")
 def main():
     st.title("중고차 매매 데이터")
 
-    total, daily, weekly = get_cnts()
+    total, sold, daily, weekly = get_cnts()
     brand_names = get_names()['brand'].unique().tolist()
     car_names = get_names()['names'].unique().tolist()
 
@@ -24,8 +24,9 @@ def main():
         car_name_selected = st.multiselect("Select car name", ["All"] + car_names, "All")
 
     
-    c1, c3, c4 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("K Car 직영중고차", f'{total[0]}', f'{total[1]}')
+    c2.metric("전체 판매량", f'{sold}', f'{daily[0]}')
     c3.metric("일간", f'{daily[0]}', f'{daily[0] - daily[1]}')
     c4.metric("주간", f'{weekly[0]}', f'{weekly[0] - weekly[1]}')
 
@@ -43,7 +44,7 @@ def main():
         
         weekly = pd.DataFrame(conn.query(query))
         weekly.index += 1
-    
+
         day = f"""
         SELECT 
             `{t1}`.id, 
@@ -56,16 +57,16 @@ def main():
             `{t1}`.fuel,
             `{t1}`.area,
             `{t1}`.url
-        FROM `{t1}`
-        JOIN `{t2}`
-        ON `{t1}`.id = `{t2}`.id
+        FROM `{t2}`
+        JOIN `{t1}`
+        ON `{t2}`.id = `{t1}`.id
         JOIN `{t3}`
-        ON `{t1}`.id = `{t3}`.id
+        ON `{t2}`.id = `{t3}`.id
         WHERE 
-            is_sold = 1
-            AND sold_at = CURDATE()
+            `{t2}`.is_sold = 1
+            AND `{t2}`.sold_at = CURDATE()
         """
-        
+        st.write('(단위: 만원)')
         daily = pd.DataFrame(conn.query(day))
         daily.index += 1
 
