@@ -3,7 +3,8 @@ import streamlit as st
 from utils.query import get_cnts, get_names
 
 st.set_page_config(
-page_title = "중고차 매매 대시보드",
+page_title="중고차 매매 대시보드",
+page_icon=":car:",
 layout="wide",
 initial_sidebar_state="expanded"
 )
@@ -11,68 +12,97 @@ initial_sidebar_state="expanded"
 conn = st.connection("mysql", type="sql")
 
 def main():
-    st.title("중고차 매매 데이터")
+    st.title("중고차 매매 대시보드")
 
     total, sold, daily, weekly = get_cnts()
-    brand_names = get_names()['brand'].unique().tolist()
-    car_names = get_names()['names'].unique().tolist()
+    names = get_names()
+    brand_names = names['brand'].unique().tolist()
+    car_names = names['names'].unique().tolist()
 
     # 사이드바
     with st.sidebar:
-        st.sidebar.title("중고차 매매 대시보드")
-        brand_name_selected = st.multiselect("Select car name", ["All"] + brand_names, "All")
+        st.sidebar.title("브랜드 및 차량 선택")
+        brand_name_selected = st.multiselect("Select brand name", ["All"] + brand_names, "All")
         car_name_selected = st.multiselect("Select car name", ["All"] + car_names, "All")
-
-    
+        
+        search_button = st.button(":mag: Search!")
+        
+    # 메인화면
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("K Car 직영중고차", f'{total[0]}', f'{total[1]}')
     c2.metric("전체 판매량", f'{sold}', f'{daily[0]}')
     c3.metric("일간", f'{daily[0]}', f'{daily[0] - daily[1]}')
     c4.metric("주간", f'{weekly[0]}', f'{weekly[0] - weekly[1]}')
+    
 
-    st.divider()
-
-    t1 = st.secrets["database"]["t1_name"]
-    t2 = st.secrets["database"]["t2_name"]
-    t3 = st.secrets["database"]["t3_name"]
-    with st.spinner("Loading..."):
-        query = f"""
-        SELECT *
-        FROM `{t2}`
-        WHERE crawled_at = DATE(CURDATE() - INTERVAL 7 DAY)
-        """
+    if not search_button:
+        # Top 10
+        st.subheader('Top 10', divider="grey")
         
-        weekly = pd.DataFrame(conn.query(query))
-        weekly.index += 1
+        # brand 별 개수
+        names['cnt'] = names.groupby(['brand'])['names'].transform('count')
+        tmp = names[['brand', 'cnt']].drop_duplicates().sort_values(by='cnt', ascending=False)
+        ranks = tmp.nlargest(10, 'cnt', keep='all')
 
-        day = f"""
-        SELECT 
-            `{t1}`.id, 
-            `{t1}`.name, 
-            `{t3}`.price,
-            `{t3}`.pc_type, 
-            `{t3}`.monthly_cost, 
-            `{t1}`.model_year,
-            `{t1}`.km,
-            `{t1}`.fuel,
-            `{t1}`.area,
-            `{t1}`.url
-        FROM `{t2}`
-        JOIN `{t1}`
-        ON `{t2}`.id = `{t1}`.id
-        JOIN `{t3}`
-        ON `{t2}`.id = `{t3}`.id
-        WHERE 
-            `{t2}`.is_sold = 1
-            AND `{t2}`.sold_at = CURDATE()
-        """
-        st.write('(단위: 만원)')
-        daily = pd.DataFrame(conn.query(day))
-        daily.index += 1
+        st.dataframe(
+            ranks,
+            column_order=('brand', 'cnt'),
+            hide_index=True,
+            column_config={
+                'cnt': st.column_config.ProgressColumn(
+                    label="Count",
+                    format="%d",
+                    min_value=min(ranks['cnt']),
+                    max_value=max(ranks['cnt'])
+                )
+            }
+        )
+    else:
+        st.subheader(f':bar_chart: {brand_name_selected[0]}', divider="grey")
 
-    # id 컬럼의 콤마 제거
-    st.dataframe(weekly, column_config={"id": st.column_config.NumberColumn(format="%f")},)
-    st.dataframe(daily, column_config={"id": st.column_config.NumberColumn(format="%f")},)
+
+
+    # t1 = st.secrets["database"]["t1_name"]
+    # t2 = st.secrets["database"]["t2_name"]
+    # t3 = st.secrets["database"]["t3_name"]
+    # with st.spinner("Loading..."):
+    #     query = f"""
+    #     SELECT *
+    #     FROM `{t2}`
+    #     WHERE crawled_at = DATE(CURDATE() - INTERVAL 7 DAY)
+    #     """
+        
+    #     weekly = pd.DataFrame(conn.query(query))
+    #     weekly.index += 1
+
+        # day = f"""
+        # SELECT 
+        #     `{t1}`.id, 
+        #     `{t1}`.name, 
+        #     `{t3}`.price,
+        #     `{t3}`.pc_type, 
+        #     `{t3}`.monthly_cost, 
+        #     `{t1}`.model_year,
+        #     `{t1}`.km,
+        #     `{t1}`.fuel,
+        #     `{t1}`.area,
+        #     `{t1}`.url
+        # FROM `{t2}`
+        # JOIN `{t1}`
+        # ON `{t2}`.id = `{t1}`.id
+        # JOIN `{t3}`
+        # ON `{t2}`.id = `{t3}`.id
+        # WHERE 
+        #     `{t2}`.is_sold = 1
+        #     AND `{t2}`.sold_at = CURDATE()
+        # """
+        # st.write('(단위: 만원)')
+        # daily = pd.DataFrame(conn.query(day))
+        # daily.index += 1
+
+    # # id 컬럼의 콤마 제거
+    # st.dataframe(weekly, column_config={"id": st.column_config.NumberColumn(format="%f")},)
+    # st.dataframe(daily, column_config={"id": st.column_config.NumberColumn(format="%f")},)
 
 if __name__ == "__main__":
 
