@@ -43,8 +43,8 @@ def load(info):
 
         # crawling 테이블과 main 테이블 비교 후, main 테이블에 없는 값들 삽입
         query1 = """
-        INSERT IGNORE INTO main(id, name, model_year, km, fuel, area, url)
-        SELECT id, name, model_year, km, fuel, area, url
+        INSERT INTO main(id, name, model_year, km, fuel, area, url)
+        SELECT DISTINCT id, name, model_year, km, fuel, area, url
         FROM crawling
         WHERE NOT EXISTS (
             SELECT 1
@@ -84,11 +84,13 @@ def load(info):
         query4 = """
         UPDATE sales_list sl
         SET sl.is_sold = 1, sl.sold_at = CURDATE()
-        WHERE NOT EXISTS(
-            SELECT 1
-            FROM crawling
-            WHERE crawling.id = sl.id
-        )
+        WHERE 
+            sl.is_sold = 0 
+            AND NOT EXISTS(
+                SELECT 1
+                FROM crawling
+                WHERE crawling.id = sl.id
+            )
         """
         conn.execute(text(query4))
         
