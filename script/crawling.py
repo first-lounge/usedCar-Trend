@@ -162,6 +162,7 @@ while True:
     time.sleep(1.5)
     CrawlingKcar(car_info)
 
+    # 마지막 페이지인지 확인
     html = driver.page_source   
     soup = BeautifulSoup(html, 'html.parser') 
     nextBtn = soup.find("div", {"class" : "paging"}).find_all("img")    
@@ -180,7 +181,6 @@ while True:
             break
     except Exception as e:
         print(e)
-        print(nextBtn)
         print(pages)
         break
     
