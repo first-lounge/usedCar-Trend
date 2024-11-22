@@ -30,8 +30,9 @@ def load(info):
     df = pd.DataFrame(data=info)
     df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfos.csv')
 
-    if df.duplicated().sum():
-        print("Duplicated Data Exists")
+    cnt = df.duplicated().sum()
+    if cnt:
+        print(f"Duplicated Data Exists : {cnt}")
         df.drop_duplicates(inplace=True)
 
     # 데이터 전처리
