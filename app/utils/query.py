@@ -112,7 +112,24 @@ def get_names():
     """
     tmp = pd.read_sql(query, conn)
     tmp['brand'] = tmp['name'].str.split().str[0]
-    tmp['names'] = tmp['name'].str.split().str[1:4].str.join(' ')
-    result = tmp[['brand', 'names']]
+    tmp['names'] = tmp['name'].str.split().str[1:5].str.join(' ')
+    sold = tmp[['brand', 'names']]
 
-    return result
+    query2 = """
+        SELECT 
+            DISTINCT m.name, 
+            p.price,
+            m.model_year,
+            m.km,
+            m.fuel,
+            m.area,
+            m.url
+        FROM main m
+        JOIN price_info p
+        ON m.id = p.id
+    """
+    tmp = pd.read_sql(query2, conn)
+    tmp['brand'] = tmp['name'].str.split().str[0]
+    tmp['names'] = tmp['name'].str.split().str[1:].str.join(' ')
+
+    return sold, tmp
