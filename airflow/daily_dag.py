@@ -10,7 +10,7 @@ SCRIPT_PATH = f'{DIR_PATH}\script'
 default_args = {
     'owner': 'hojae',  # DAG의 소유자 또는 책임자
     'depends_on_past': False,
-    'start_date': datetime(2024, 11, 27, tz="Aisa/Seoul"),  # DAG 시작 날짜
+    'start_date': datetime(2024, 11, 27, tzinfo="Aisa/Seoul"),  # DAG 시작 날짜
     'catchup':False,
     'schedule_interval':timedelta(hours=8), # 8시간마다 실행
     'retries': 4,  # 실패 시 재시도 횟수
