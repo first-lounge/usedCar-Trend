@@ -36,7 +36,7 @@ def get_total_cnt():
     
     return cnt
 
-def get_total_sold():
+def get_sold_cnt():
     query = f"""SELECT COUNT(*) FROM `{t2}` WHERE is_sold = 1"""
     cursor.execute(query)
     cnt = cursor.fetchall()[0][0]
@@ -93,11 +93,11 @@ def get_weekly_cnt():
     return cnt
 
 def get_cnts():
-    # try:
     total = get_total_cnt()
-    sold = get_total_sold()
+    sold = get_sold_cnt()
     daily = get_daily_cnt()
     weekly = get_weekly_cnt()
+
     conn.commit()
 
     return total, sold, daily, weekly
@@ -110,10 +110,10 @@ def get_names():
         ON m.id = s.id
         WHERE s.is_sold = 1
     """
-    tmp = pd.read_sql(query, conn)
-    tmp['brand'] = tmp['name'].str.split().str[0]
-    tmp['names'] = tmp['name'].str.split().str[1:5].str.join(' ')
-    sold = tmp[['brand', 'names']]
+    sold = pd.read_sql(query, conn)
+    sold['brand'] = sold['name'].str.split().str[0]
+    sold['names'] = sold['name'].str.split().str[1:5].str.join(' ')
+    sold = sold[['brand', 'names']]
 
     query2 = """
         SELECT 
@@ -127,9 +127,12 @@ def get_names():
         FROM main m
         JOIN price_info p
         ON m.id = p.id
+        JOIN sales_list s
+        ON m.id = s.id
+        WHERE s.is_sold = 0
     """
-    tmp = pd.read_sql(query2, conn)
-    tmp['brand'] = tmp['name'].str.split().str[0]
-    tmp['names'] = tmp['name'].str.split().str[1:].str.join(' ')
+    all = pd.read_sql(query2, conn)
+    all['brand'] = all['name'].str.split().str[0]
+    all['names'] = all['name'].str.split().str[1:].str.join(' ')
 
-    return sold, tmp
+    return sold, all
