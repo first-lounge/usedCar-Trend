@@ -1,6 +1,8 @@
+import time
 import pymysql
 import configparser   # ini 파일 읽기
 import pandas as pd 
+from datetime import datetime as dt
 from sqlalchemy import create_engine, text 
 
 def info_transform(df):
@@ -19,16 +21,17 @@ def info_transform(df):
     return df
 
 def load(info):
+    s1 = time.time() # load 함수 시작 시간 저장
     # sql 연결
     config = configparser.ConfigParser()
     config.read('C:/Users/pirou/OneDrive/바탕 화면/중고차 매매 프로젝트/settings.ini')
 
     db_connections = f'mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}'
-    engine = create_engine(db_connections)
+    engine = create_engine(db_connections, future=True)
     conn = engine.connect()
 
     df = pd.DataFrame(data=info)
-    df.to_csv('C:/Users/pirou/OneDrive/바탕 화면/carInfos.csv')
+    df.to_csv(f'C:/Users/pirou/OneDrive/바탕 화면/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
 
     cnt = df.duplicated().sum()
     if cnt:
@@ -103,5 +106,6 @@ def load(info):
 
         conn.commit()
         conn.close()
+        print(f'SQL Time: {time.time() - s1:.4f} sec') # 종료 수행 시간 출력
     except Exception as e:
         print(f'오류 발생 : {e} ')

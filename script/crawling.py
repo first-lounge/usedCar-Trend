@@ -52,7 +52,7 @@ def CrawlingKcar(tmp_info):
 
         price = int(info[0].strip().split()[0].replace(',', '').replace('만원', ''))   # 가격(단위: 만원)
         details = info[1:]    # 세부사항들
-        purchase_type = ""    # 할부, 렌트, 보증금 등등
+        pc_type = ""    # 할부, 렌트, 보증금 등등
         model_year = ""   # 연식(단위: x년 x월식)
         km = ""   # 키로수(단위: xkm)
         fuel = ""   # 연료
@@ -63,7 +63,7 @@ def CrawlingKcar(tmp_info):
         if len(details) > 1:
             tmp = details[1].strip().split()
 
-            purchase_type = details[0].strip() + ' | ' + tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
+            pc_type = details[0].strip() + ' | ' + tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
 
             try:
                 model_year = tmp[3] + ' ' + tmp[4]
@@ -77,7 +77,7 @@ def CrawlingKcar(tmp_info):
             tmp = details[0].strip().split()
             
             if tmp[0] == '할부':
-                purchase_type = tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
+                pc_type = tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
                 model_year = tmp[3] + ' ' + tmp[4]
                 km = tmp[5][:-2]
                 fuel = tmp[6]
@@ -103,7 +103,7 @@ def CrawlingKcar(tmp_info):
                             "id" : carId,
                             "name": name, 
                             "price": price,
-                            "pc_type": purchase_type,
+                            "pc_type": pc_type,
                             "model_year": model_year,
                             "km": km,
                             "fuel": fuel,
@@ -131,11 +131,13 @@ def move_page(p):
         button = driver.find_element(By.XPATH, f'//*[@id="app"]/div[2]/div[2]/div[2]/div[4]/div[1]/div[7]/div/ul/li[{tmp}]')
         
     except NoSuchElementException as e: # 크롤링 중간에 오류 발생한 경우
-        print(f'{e} At Page {p}')
         return -1
 
     action.click(button).perform()
     driver.implicitly_wait(10)
+
+# 전체 코드 시작
+s2 = time.time() 
 
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
@@ -162,7 +164,7 @@ while True:
     time.sleep(1.5)
     CrawlingKcar(car_info)
 
-    # 마지막 페이지인지 확인
+    # 크롤링 에러 혹은 마지막 페이지인지 확인
     html = driver.page_source   
     soup = BeautifulSoup(html, 'html.parser') 
     nextBtn = soup.find("div", {"class" : "paging"}).find_all("img")    
@@ -179,7 +181,7 @@ while True:
             total_KC = int(total.text.strip().split()[-1][:-1].replace(",", ""))
             isLast = 1
             break
-    except Exception as e:
+    except Exception as e:  # 크롤링 에러 발생 시
         print(e)
         print(pages)
         break
@@ -189,26 +191,20 @@ while True:
     isLast = move_page(page)
 
     if isLast == -1:
-        print("Crawling ERROR")
         break
 
 size = len(car_info)
 
 if isLast == 1:    
-    print(f'isLast : {isLast}')
     print(f'Total Page : {page}')
     print(f'Total Car Cnt : {total_KC}')
     print(f'crawled Data Cnt : {size}')
     
     # 크롤링한 데이터 전처리 및 SQL로 삽입
     load(car_info)
+    print(f'Total Time: {time.time() - s2:.4f} sec') # 전체 코드 수행 시간 출력
 
 else:
+    print("Crawling ERROR")
     print(f'isLast : {isLast}')
     print(f'Page Error At {page} ')
-    print(f'Total Car cnt : {total_KC}')
-    print(f'crawled Data Cnt : {size}')
-
-    df = pd.DataFrame(data=car_info) 
-    df.index += 1
-    df.to_csv(f'C:/Users/pirou/OneDrive/바탕 화면/tmp{size}.csv')
