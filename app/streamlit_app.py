@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 from utils.query import get_cnts, get_names
-from utils.graph import get_brand_bar, get_sold_pie
+from utils.graph import get_brand_bar, get_sold_pie, get_not_sold_scatter
 
 st.set_page_config(
 page_title="중고차 매매 대시보드",
@@ -55,11 +55,10 @@ def main():
 
         with c1:
             # brand 별 개수
-            ranks = group_by_brand(not_sold, "")
+            ranks = group_by_brand(sold_car, "")
 
             # 전체 브랜드
-            st.subheader(':pushpin: Top 10', divider="grey")
-
+            st.subheader(':pushpin: Sold Top 10', divider="grey")
             st.dataframe(
                 ranks.nlargest(10, 'cnt'),
                 column_order=('brand', 'cnt'),
@@ -75,13 +74,15 @@ def main():
                 }
             )
         with c2:
-            ranks = group_by_brand(sold_car, "")
-            st.subheader(':bar_chart: Sold', divider='gray')
+            ranks = group_by_brand(not_sold, "").nlargest(10, 'cnt')
+            
+            st.subheader(':bar_chart: Not Sold Top 10', divider='gray')
             st.plotly_chart(get_brand_bar(ranks))
+        
+        st.subheader(':blue_car: Not Sold Car List', divider='gray')
+        st.dataframe(not_sold.iloc[:, :7], hide_index=True, column_config={'url': st.column_config.LinkColumn()})
 
     else:
-        ranks = group_by_brand(sold_car, brand_name_selected)
-
         if not car_name_selected:
             # 선택한 브랜드별 메인화면
             st.title(f":oncoming_automobile: {brand_name_selected}")
@@ -95,14 +96,16 @@ def main():
             m1.metric("구매 가능 차량 수", f'{total}')
             m2.metric("판매량", f'{sold}')
             m3.metric("평균 가격(단위: 만원)", f'{avg_price}')
-            m4.metric("평균 KM", f'{km}')
+            m4.metric("평균 KM", f'{format(km, ',d')}')
 
             c1, c2 = st.columns([2,3])
             
             # pie 차트
             with c1:
+                ranks = group_by_brand(sold_car, brand_name_selected).nlargest(10, 'cnt')
+
                 st.subheader(f':pushpin: Top 10', divider="grey")
-                st.plotly_chart(get_sold_pie(ranks.nlargest(10, 'cnt')))
+                st.plotly_chart(get_sold_pie(ranks))
 
             with c2:
                 # 선택한 브랜드 전체 차량 데이터
@@ -114,9 +117,8 @@ def main():
 
         else:
             # 선택한 브랜드별 차종별 메인화면
-            st.title(f":oncoming_automobile: {brand_name_selected} {car_name_selected}")
+            st.title(f":oncoming_automobile: {car_name_selected}")
             
-
             total = len(not_sold[not_sold['names'] == car_name_selected])
             avg_price = round(not_sold[not_sold['names'] == car_name_selected]['price'].mean())
             km = round(not_sold[not_sold['names'] == car_name_selected]['km'].mean())
@@ -124,18 +126,19 @@ def main():
             m1, m2, m3 = st.columns(3)
             m1.metric("구매 가능 차량 수", f'{total}')
             m2.metric("평균 가격(단위: 만원)", f'{avg_price}')
-            m3.metric("평균 KM", f'{km}')
+            m3.metric("평균 KM", f'{format(km, ',d')}')
             
             c1, c2 = st.columns([2,3])
+            filtered_df = not_sold[not_sold['names'] == car_name_selected].iloc[:, 0:7]
 
             with c1:
-                st.subheader(f':chart_with_upwards_trend: 상세 그래프 모음', divider="grey")
+                st.subheader(f':chart_with_upwards_trend: 가격과 KM 상관관계', divider="grey")
 
+                st.plotly_chart(get_not_sold_scatter(filtered_df))
             with c2:
                 # 선택한 브랜드의 특정 차종 데이터
-                st.subheader(f':pushpin: 구매 가능 차량', divider='gray')
-                
-                filtered_df = not_sold[not_sold['names'] == car_name_selected].iloc[:, 0:7]
+                st.subheader(f':pushpin: 구매 가능 차량', divider='gray') 
+
                 st.dataframe(data = filtered_df, hide_index=True, column_config={'url': st.column_config.LinkColumn()})
 
     # # id 컬럼의 콤마 제거
