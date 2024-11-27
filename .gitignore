@@ -1,2 +1,4 @@
 secrets.toml
 settings.ini
+__pycache__
+airflow/venv
