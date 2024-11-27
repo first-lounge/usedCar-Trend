@@ -1,11 +1,11 @@
 import re   # 크롤링 - img url에서 자동차 id 추출
 import time # 크롤링
 import pandas as pd # 전처리 - DataFrame으로 변환
+from datetime import datetime as dt # 전처리 - model_year
 
 from tl_process import load   # 변환
 from bs4 import BeautifulSoup   # 크롤링
 from selenium import webdriver  # 크롤링
-from datetime import datetime as dt # 전처리 - model_year
 from selenium.webdriver.common.by import By # 크롤링
 from selenium.webdriver import ActionChains # 크롤링
 from selenium.webdriver.chrome.service import Service   # 크롤링
