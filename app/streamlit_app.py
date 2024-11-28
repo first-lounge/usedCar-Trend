@@ -79,7 +79,7 @@ def main():
             st.subheader(':bar_chart: Not Sold Top 10', divider='gray')
             st.plotly_chart(get_brand_bar(ranks))
         
-        st.subheader(':blue_car: Not Sold Car List', divider='gray')
+        st.subheader(':blue_car: Not Sold List', divider='gray')
         st.dataframe(not_sold.iloc[:, :7], hide_index=True, column_config={'url': st.column_config.LinkColumn()})
 
     else:
@@ -132,7 +132,7 @@ def main():
             filtered_df = not_sold[not_sold['names'] == car_name_selected].iloc[:, 0:7]
 
             with c1:
-                st.subheader(f':chart_with_upwards_trend: 가격과 KM 상관관계', divider="grey")
+                st.subheader(f':chart_with_upwards_trend: 가격과 KM 분포  ', divider="grey")
 
                 st.plotly_chart(get_not_sold_scatter(filtered_df))
             with c2:
