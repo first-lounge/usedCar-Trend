@@ -21,6 +21,9 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 - MySQL
 - Streamlit
 
+## ERD 다이어그램
+![ERD](./img/db_schema.png)
+
 ## 아키텍처
 ![Architecture](./img/architecture.png)
 ### Data Sources
@@ -38,6 +41,8 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 - DataFrame으로 변환한 데이터들을 MySQL에 삽입
 - MySQL에는 총 1개의 임시 테이블(crawling)과 3개의 테이블(main, price_info, sales_list) 존재
 
-## ERD 다이어그램
-![ERD](./img/db_schema.png)
+
+## 알게된 점들
+1. 대용량 데이터 저장
+   - 처음에는 DB에 for문으로 List의 요소를 하나씩 INSERT하는 방식을 사용 (약 9000개)
 
