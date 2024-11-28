@@ -4,6 +4,17 @@
 ## 프로젝트 소개
 Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파이프라인 구축 및 시각화하였습니다.
 
+## 프로젝트 구성
+<details>
+  <summary>메인화면</summary>
+  <figure class="half"><a href="link"><img src="./img/main.png"></a> <a href="link"><img src="./img/main2.png"></a> </figure> 
+</details>
+
+<details>
+  <summary>브랜드 및 차량 선택 화면</summary>
+  <figure class="half"><a href="link"><img src="./img/brand_selected.png"></a> <a href="link"><img src="./img/brand_car_selected.png" "></a></figure> 
+</details>
+
 ## 시작 가이드
 ### 요구사항
 - Python 3.12
@@ -11,6 +22,7 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 - Streamlit
 
 ## 아키텍처
+![Architecture](./img/architecture.png)
 ### Data Sources
 - [Kcar](https://www.kcar.com/bc/search)
 
@@ -27,4 +39,5 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 - MySQL에는 총 1개의 임시 테이블(crawling)과 3개의 테이블(main, price_info, sales_list) 존재
 
 ## ERD 다이어그램
+![ERD](./img/db_schema.png)
 
