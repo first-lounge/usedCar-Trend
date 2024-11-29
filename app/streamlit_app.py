@@ -10,8 +10,6 @@ layout="wide",
 initial_sidebar_state="expanded"
 )
 
-conn = st.connection("mysql", type="sql")
-
 # 브랜드별 혹은 브랜드별 자동차별로 묶는 함수
 def group_by_brand(tmp, brand_name):
     # 전체 브랜드별 개수
