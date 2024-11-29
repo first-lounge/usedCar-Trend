@@ -21,7 +21,6 @@ def info_transform(df):
     return df
 
 def load(info):
-    s1 = time.time() # load 함수 시작 시간 저장
     # sql 연결
     config = configparser.ConfigParser()
     config.read('C:/Users/pirou/OneDrive/바탕 화면/중고차 매매 프로젝트/settings.ini')
@@ -106,6 +105,7 @@ def load(info):
 
         conn.commit()
         conn.close()
-        print(f'SQL Time: {time.time() - s1:.4f} sec') # 종료 수행 시간 출력
+        engine.dispose()
+        
     except Exception as e:
         print(f'오류 발생 : {e} ')
