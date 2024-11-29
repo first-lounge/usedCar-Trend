@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 # sql 연결
-conn = pymysql.connect(db='car', host='localhost', user='root', passwd='!CLT-c403s', charset='utf8mb4')
+conn = pymysql.connect(db='car', host='0.tcp.jp.ngrok.io', user='root', passwd='!CLT-c403s', charset='utf8mb4', port=19366)
 cursor = conn.cursor()
 
 # table
