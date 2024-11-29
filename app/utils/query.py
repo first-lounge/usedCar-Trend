@@ -1,4 +1,3 @@
-import os
 import pymysql 
 import pandas as pd
 import streamlit as st
@@ -101,10 +100,10 @@ def get_cnts():
     return total, sold, daily, weekly
 
 def get_names():
-    query = """
+    query = f"""
         SELECT *
-        FROM main m
-        JOIN sales_list s
+        FROM `{t1}` m
+        JOIN `{t2}` s
         ON m.id = s.id
         WHERE s.is_sold = 1
     """
@@ -113,7 +112,7 @@ def get_names():
     sold['names'] = sold['name'].str.split().str[1:5].str.join(' ')
     sold = sold[['brand', 'names']]
 
-    query2 = """
+    query2 = f"""
         SELECT 
             DISTINCT m.name, 
             p.price,
@@ -122,10 +121,10 @@ def get_names():
             m.fuel,
             m.area,
             m.url
-        FROM main m
-        JOIN price_info p
+        FROM `{t1}` m
+        JOIN `{t3}` p
         ON m.id = p.id
-        JOIN sales_list s
+        JOIN `{t2}` s
         ON m.id = s.id
         WHERE s.is_sold = 0
     """
