@@ -49,10 +49,15 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
   > ![12826](./img/sqlalchemy_execute_12826.png)
 
 - 데이터 개수가 약 20만개라면?
-  > for문 + execute을 사용했더니 약 5분 34초가 걸렸습니다.
-  > ![205216](./img/sqlalchemy_execute_205216.png')
+  > for문 + execute을 사용했더니 약 5분 34초가 걸렸습니다. <br>
+  > ![205216](./img/sqlalchemy_execute_205216.png)
 
-  > to_sql을 사용하고 chunksize를 20000으로 설정하니 8.99초가 걸렸습니다.
-  > ![20000](./img/sqlalchemy_to_sql_205216.png')
+  > to_sql을 사용하고 chunksize를 20000으로 설정하니 8.99초가 걸렸습니다. <br>
+  > ![20000](./img/sqlalchemy_to_sql.png)
+
+- execute과 to_sql 차이 발생 이유
+  - execute 같은 경우 매번 commit을 호출하고 to_sql은 전체 데이터를 한 번에 DB에 넣기 때문에 commit이 한 번만 호출됩니다.
+  - execute 같은 방식은 commit을 자주 호출하기 때문에, 디스크 접근 비용이 늘어나 성능이 저하될 가능성이 높습니다.
+  - 따라서, 대량의 데이터인 경우 batch 단위로 삽입하는 **to_sql**을 사용하는 것이 효율적입니다.
 
 
