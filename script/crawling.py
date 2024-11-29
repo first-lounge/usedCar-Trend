@@ -136,8 +136,6 @@ def move_page(p):
     action.click(button).perform()
     driver.implicitly_wait(10)
 
-# 전체 코드 시작
-s2 = time.time() 
 
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
@@ -202,7 +200,6 @@ if isLast == 1:
     
     # 크롤링한 데이터 전처리 및 SQL로 삽입
     load(car_info)
-    print(f'Total Time: {time.time() - s2:.4f} sec') # 전체 코드 수행 시간 출력
 
 else:
     print("Crawling ERROR")
