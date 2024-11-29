@@ -45,21 +45,14 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 ## :exclamation: 알게된 점들
 ### *1. 대량의 데이터 저장*
 - SQLAlchemy로 DB INSERT 과정
-  > for문으로 12826개의 데이터를 하나씩 INSERT하면서 매번 commit을 진행했고 총 5.22초가 걸렸습니다 <br>
+  > for문으로 12826개의 데이터를 하나씩 INSERT하면서 매번 commit을 진행했고 총 5.22초가 걸렸습니다. <br>
   > ![12826](./img/sqlalchemy_execute_12826.png)
 
-  <details>
-    <summary>데이터 개수가 약 20만개라면?</summary>
-      - 크롤링한 데이터를 DataFrame으로 변환 후, to_sql를 사용하여 bulk방식으로 INSERT 진행
-  </details>
-    
-  <details>
-    <summary>만약 20만개의 데이터를 INSERT한다면?</summary>
-  </details>
+- 데이터 개수가 약 20만개라면?
+  > for문 + execute을 사용했더니 약 5분 34초가 걸렸습니다.
+  > ![205216](./img/sqlalchemy_execute_205216.png')
 
-- PyMySQL과 SQLAlchemy의 차이
-  
-<details>
-  <summary></summary>
-</details>
+  > to_sql을 사용하고 chunksize를 20000으로 설정하니 8.99초가 걸렸습니다.
+  > ![20000](./img/sqlalchemy_to_sql_205216.png')
+
 
