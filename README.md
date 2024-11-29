@@ -44,5 +44,8 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 
 ## :exclamation: 알게된 점들
 *1. 대용량 데이터 저장*
-   - 처음에는 DB에 for문으로 List의 요소를 하나씩 INSERT하는 방식을 사용 (약 9000개)
+   - 처음에는 DB에 for문으로 데이터를 하나씩 INSERT하는 방식을 사용 (약 10000개)
+   <details>
+     <summary>PyMySQL과 SQLAlchemy의 차이</summary>
+   </details>
 
