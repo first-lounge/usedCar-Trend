@@ -1,13 +1,10 @@
 import os
 import pymysql 
-import configparser   # ini 파일 읽기
 import pandas as pd
 import streamlit as st
 
 # sql 연결
-config = configparser.ConfigParser()
-config.read(f'{os.path.abspath(__file__)}/../../settings.ini')
-conn = pymysql.connect(db=config['db_info']['db'], host=config['db_info']['host'], user=config['db_info']['user'], passwd=config['db_info']['passwd'], charset=config['db_info']['charset'])
+conn = pymysql.connect(db='car', host='localhost', user='root', passwd='!CLT-c403s', charset='utf8mb4')
 cursor = conn.cursor()
 
 # table
