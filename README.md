@@ -5,7 +5,7 @@
 Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파이프라인 구축 및 시각화하였습니다.
 
 ## 프로젝트 구성
-홈페이지 - https://usedcar-trend-mz5scykfehbnzf8vtzkgkg.streamlit.app/
+홈페이지 - https://usedcar-trend.streamlit.app/
 <details>
   <summary>메인화면</summary>
   <figure class="half"><a href="link"><img src="./img/main.png"></a> <a href="link"><img src="./img/main2.png"></a> </figure> 
