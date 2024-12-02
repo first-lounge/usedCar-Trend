@@ -1,4 +1,3 @@
-import pandas as pd
 import streamlit as st
 from utils.query import get_cnts, get_names
 from utils.graph import get_brand_bar, get_sold_pie, get_not_sold_scatter
