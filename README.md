@@ -56,9 +56,9 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
   > to_sql을 사용하고 chunksize를 20000으로 설정하니 8.99초가 걸렸습니다. <br>
   > ![20000](./img/sqlalchemy_to_sql.png)
 
-- execute과 to_sql 차이 발생 이유
+- execute과 to_sql 성능 차이 발생 이유
   - execute 같은 경우 매번 commit을 호출하고 to_sql은 전체 데이터를 한 번에 DB에 넣기 때문에 commit이 한 번만 호출됩니다.
-  - execute 같은 방식은 commit을 자주 호출하고 그로 인해 매번 디스크에 접근하여 성능이 저하될 가능성이 높습니다.
+  - execute 방식은 commit을 자주 호출하고 그로 인해 매번 디스크에 접근하여 성능이 저하될 가능성이 높습니다.
   - 따라서, 대량의 데이터인 경우 batch 단위로 삽입하는 **to_sql**을 사용하는 것이 효율적입니다.
 
 
