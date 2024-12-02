@@ -1,7 +1,6 @@
 import pymysql 
 import pandas as pd
 import streamlit as st
-from streamlit.connections import SQLConnection
 
 # sql 연결
 conn = pymysql.connect(db=st.secrets['pymysql']['database'], host=st.secrets['pymysql']['host'], user=st.secrets['pymysql']['username'], passwd=st.secrets['pymysql']['password'], charset=st.secrets['pymysql']['charset'])
