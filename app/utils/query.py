@@ -1,15 +1,16 @@
 import pymysql 
 import pandas as pd
 import streamlit as st
+from streamlit.connections import SQLConnection
 
 # sql 연결
-conn = pymysql.connect(db='car', host='0.tcp.jp.ngrok.io', user='root', passwd='!CLT-c403s', charset='utf8mb4', port=19366)
+conn = pymysql.connect(db=st.secrets['pymysql']['database'], host=st.secrets['pymysql']['host'], user=st.secrets['pymysql']['username'], passwd=st.secrets['pymysql']['password'], charset=st.secrets['pymysql']['charset'])
 cursor = conn.cursor()
 
 # table
-t1 = st.secrets["database"]["t1_name"]
-t2 = st.secrets["database"]["t2_name"]
-t3 = st.secrets["database"]["t3_name"]
+t1 = st.secrets["db"]["t1_name"]
+t2 = st.secrets["db"]["t2_name"]
+t3 = st.secrets["db"]["t3_name"]
 
 def get_total_cnt():  
     query = f"""
