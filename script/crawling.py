@@ -172,7 +172,6 @@ while True:
     try:
         if nextBtn[-1]['alt'] != '다음':
             print(nextBtn[-1]['alt'])
-            print(page)
 
             # 전체 자동차 개수
             total = soup.find("h2", {"class" : "subTitle mt64 ft22"})
