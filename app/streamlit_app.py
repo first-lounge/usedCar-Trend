@@ -130,17 +130,13 @@ def main():
 
             with c1:
                 st.subheader(f':chart_with_upwards_trend: 가격과 KM 분포  ', divider="grey")
-
+                # scatter 차트
                 st.plotly_chart(get_not_sold_scatter(filtered_df))
             with c2:
                 # 선택한 브랜드의 특정 차종 데이터
                 st.subheader(f':pushpin: 구매 가능 차량', divider='gray') 
 
                 st.dataframe(data = filtered_df, hide_index=True, column_config={'url': st.column_config.LinkColumn()})
-
-    # # id 컬럼의 콤마 제거
-    # st.dataframe(weekly, column_config={"id": st.column_config.NumberColumn(format="%f")},)
-    # st.dataframe(daily, column_config={"id": st.column_config.NumberColumn(format="%f")},)
 
 if __name__ == "__main__":
 
