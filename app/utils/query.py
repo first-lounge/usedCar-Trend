@@ -95,7 +95,7 @@ def get_cnts():
     daily = get_daily_cnt()
     weekly = get_weekly_cnt()
 
-    conn.commit()
+    # conn.commit()
 
     return total, sold, daily, weekly
 
