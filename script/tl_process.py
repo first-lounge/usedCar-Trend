@@ -1,4 +1,3 @@
-import time
 import pymysql
 import configparser   # ini 파일 읽기
 import pandas as pd 
@@ -23,7 +22,7 @@ def info_transform(df):
 def load(info):
     # sql 연결
     config = configparser.ConfigParser()
-    config.read('C:/Users/pirou/OneDrive/바탕 화면/중고차 매매 프로젝트/settings.ini')
+    config.read('/home/hojae/settings.ini')
 
     db_connections = f'mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}'
     engine = create_engine(db_connections, future=True)
