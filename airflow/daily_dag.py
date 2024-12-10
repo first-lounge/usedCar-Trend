@@ -32,7 +32,7 @@ with DAG(
 ) as dag:
     crawling_task = BashOperator(
         task_id=f'crawling',
-        bash_command=f'python3 {SCRIPT_PATH}/crawling.py'
+        bash_command=f'python3 /home/hojae/usedCar-Trend/script/crawling.py'
     )
 
     crawling_task
