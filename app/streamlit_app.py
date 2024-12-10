@@ -37,7 +37,7 @@ def main():
             car_names = group_by_brand(not_sold, brand_name_selected)['names'].unique().tolist()
             car_name_selected = st.selectbox("Car", car_names, index=None, placeholder="Select car name")
         
-
+    
     if not brand_name_selected:
         # 메인화면
         st.title(":oncoming_automobile: K Car 직영중고차 대시보드")
@@ -49,7 +49,7 @@ def main():
         m4.metric("주간", f'{weekly[0]}', f'{weekly[0] - weekly[1]}')
         
         c1, c2 = st.columns([2,3])
-
+        
         with c1:
             # brand 별 개수
             ranks = group_by_brand(sold_car, "")
