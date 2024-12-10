@@ -199,8 +199,9 @@ if isLast == 1:
     
     # 크롤링한 데이터 전처리 및 SQL로 삽입
     load(car_info)
-
 else:
     print("Crawling ERROR")
     print(f'isLast : {isLast}')
     print(f'Page Error At {page} ')
+
+driver.quit()
