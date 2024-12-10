@@ -7,7 +7,7 @@ from airflow.operators.bash import BashOperator
 
 # 파일 경로
 DIR_PATH = os.path.abspath(__file__)
-SCRIPT_PATH = f'{DIR_PATH}/../script'
+SCRIPT_PATH = f'{DIR_PATH}/script'
 
 # 로컬 타임존 생성
 local_tz = pendulum.timezone("Asia/Seoul")
