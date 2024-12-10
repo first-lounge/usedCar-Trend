@@ -11,6 +11,7 @@ t1 = st.secrets["db"]["t1_name"]
 t2 = st.secrets["db"]["t2_name"]
 t3 = st.secrets["db"]["t3_name"]
 
+@st.cache_data
 def get_total_cnt():  
     query = f"""
     SELECT COUNT(*) 
@@ -33,6 +34,7 @@ def get_total_cnt():
     
     return cnt
 
+@st.cache_data
 def get_sold_cnt():
     query = f"""SELECT COUNT(*) FROM `{t2}` WHERE is_sold = 1"""
     cursor.execute(query)
@@ -40,6 +42,7 @@ def get_sold_cnt():
 
     return cnt
 
+@st.cache_data
 def get_daily_cnt():
     query = f"""
     SELECT COUNT(*)
@@ -64,6 +67,7 @@ def get_daily_cnt():
 
     return cnt
 
+@st.cache_data
 def get_weekly_cnt():
     query = f"""
     SELECT COUNT(*)
@@ -89,16 +93,16 @@ def get_weekly_cnt():
 
     return cnt
 
+@st.cache_data
 def get_cnts():
     total = get_total_cnt()
     sold = get_sold_cnt()
     daily = get_daily_cnt()
     weekly = get_weekly_cnt()
 
-    # conn.commit()
-
     return total, sold, daily, weekly
 
+@st.cache_data
 def get_names():
     query = f"""
         SELECT *
