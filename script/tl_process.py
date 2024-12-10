@@ -29,7 +29,7 @@ def load(info):
     conn = engine.connect()
 
     df = pd.DataFrame(data=info)
-    df.to_csv(f'C:/Users/pirou/OneDrive/바탕 화면/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
+    df.to_csv(f'/home/hojae/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
 
     cnt = df.duplicated().sum()
     if cnt:
