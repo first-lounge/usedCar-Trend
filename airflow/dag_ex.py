@@ -20,7 +20,7 @@ with DAG(
 
     bash_t2 = BashOperator(
         task_id="bash_t2",
-        bash_command=f"cd {SCRIPT_PATH}",
+        bash_command=f"echo {SCRIPT_PATH}",
     )
 
     bash_t1 >> bash_t2
