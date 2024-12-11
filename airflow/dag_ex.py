@@ -15,12 +15,17 @@ with DAG(
 ) as dag:
     bash_t1 = BashOperator(
         task_id="bash_t1",
-        bash_command="cat /home/hojae/usedCar-Trend/script/crawling.py",
+        bash_command="cd /home/hojae/usedCar-Trend/script/crawling.py",
     )
 
     bash_t2 = BashOperator(
         task_id="bash_t2",
-        bash_command=f"echo {SCRIPT_PATH}",
+        bash_command=f"cd {SCRIPT_PATH}",
     )
 
-    bash_t1 >> bash_t2
+    bash_t3 = BashOperator(
+        task_id="bash_t3",
+        bash_command=f"pwd"
+    )
+
+    bash_t1 >> bash_t2 >> bash_t3
