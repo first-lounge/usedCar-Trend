@@ -10,7 +10,7 @@ SCRIPT_PATH = f'{DIR_PATH}/script'
 with DAG(
     dag_id="dags_ex",
     schedule="* * * * *",
-    start_date=pendulum.datetime(2024, 12, 10, tz="Asia/Seoul"),
+    start_date=pendulum.datetime(2024, 12, 11, tz="Asia/Seoul"),
     catchup=False
 ) as dag:
     bash_t1 = BashOperator(
