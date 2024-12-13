@@ -22,14 +22,13 @@ def info_transform(df):
 def load(info):
     # sql 연결
     config = configparser.ConfigParser()
-    config.read('/home/hojae/settings.ini')
+    config.read('/root/settings.ini')
 
     db_connections = f'mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}'
     engine = create_engine(db_connections, future=True)
     conn = engine.connect()
 
     df = pd.DataFrame(data=info)
-    df.to_csv(f'/home/hojae/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
 
     cnt = df.duplicated().sum()
     if cnt:
@@ -38,6 +37,7 @@ def load(info):
 
     # 데이터 전처리
     final = info_transform(df)
+    final.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
 
     try:
         # crawling 테이블에 삽입
