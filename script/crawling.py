@@ -1,6 +1,5 @@
 import re   # 크롤링 - img url에서 자동차 id 추출
 import time # 크롤링
-import pandas as pd # 전처리 - DataFrame으로 변환
 from datetime import datetime as dt # 전처리 - model_year
 
 from tl_process import load   # 변환
