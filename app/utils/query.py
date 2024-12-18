@@ -71,11 +71,13 @@ def get_daily_cnt():
 def get_weekly_cnt():
     query = f"""
     SELECT COUNT(*)
-    FROM `{t2}`
+    FROM `{t1}` m
+    join `{t2}` s
+    on m.id = s.id
     WHERE
-        is_sold = 1
-        AND sold_at = DATE(CURDATE() - INTERVAL 7 DAY)
-        
+        s.is_sold = 1
+        AND s.sold_at >= DATE(CURDATE() - INTERVAL 7 DAY)
+        AND s.sold_at < CURDATE()
     """
 
     cursor.execute(query)
@@ -83,10 +85,13 @@ def get_weekly_cnt():
 
     query2 = f"""
     SELECT COUNT(*)
-    FROM `{t2}`
-    WHERE 
-        is_sold = 1
-        AND sold_at = DATE(DATE(CURDATE() - INTERVAL 1 DAY) - INTERVAL 7 DAY)
+    FROM `{t1}` m
+    join `{t2}` s
+    on m.id = s.id
+    WHERE
+        s.is_sold = 1
+        AND s.sold_at >= DATE(CURDATE() - INTERVAL 7 DAY)
+        AND s.sold_at < DATE(CURDATE() - INTERVAL 1 DAY)
     """
     cursor.execute(query2)
     cnt.append(cursor.fetchall()[0][0])
