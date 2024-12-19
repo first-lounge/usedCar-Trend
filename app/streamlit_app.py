@@ -55,7 +55,7 @@ def main():
             ranks = group_by_brand(sold_car, "")
 
             # 전체 브랜드
-            st.subheader(':pushpin: Sold Top 10', divider="grey")
+            st.subheader(':pushpin: Top 10 (팔린 차량)', divider="grey")
             st.dataframe(
                 ranks.nlargest(10, 'cnt'),
                 column_order=('brand', 'cnt'),
@@ -73,7 +73,7 @@ def main():
         with c2:
             ranks = group_by_brand(not_sold, "").nlargest(10, 'cnt')
             
-            st.subheader(':bar_chart: Not Sold Top 10', divider='gray')
+            st.subheader(':bar_chart: Top 10 (구매 가능 차량)', divider='gray')
             st.plotly_chart(get_brand_bar(ranks))
         
         st.subheader(':blue_car: Not Sold List', divider='gray')
