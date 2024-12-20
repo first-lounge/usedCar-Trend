@@ -67,7 +67,7 @@ def get_daily_cnt():
 
     return cnt
 
-@st.cache_data
+# @st.cache_data
 def get_weekly_cnt():
     query = f"""
     SELECT COUNT(*)
@@ -98,7 +98,7 @@ def get_weekly_cnt():
 
     return cnt
 
-@st.cache_data
+# @st.cache_data
 def get_cnts():
     total = get_total_cnt()
     sold = get_sold_cnt()
@@ -107,7 +107,7 @@ def get_cnts():
 
     return total, sold, daily, weekly
 
-@st.cache_data
+# @st.cache_data
 def get_names():
     query = f"""
         SELECT *
