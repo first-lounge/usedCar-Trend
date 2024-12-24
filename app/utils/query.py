@@ -111,7 +111,8 @@ def get_names():
             m.km,
             m.fuel,
             m.area,
-            m.url
+            m.url,
+            s.is_sold
         FROM `{t1}` m
         JOIN `{t3}` p
         ON m.id = p.id
@@ -131,7 +132,8 @@ def get_names():
             m.km,
             m.fuel,
             m.area,
-            m.url
+            m.url,
+            s.is_sold
         FROM `{t1}` m
         JOIN `{t3}` p
         ON m.id = p.id
