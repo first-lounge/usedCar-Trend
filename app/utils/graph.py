@@ -20,7 +20,7 @@ def get_sold_scatter(sold, not_sold):
         y=sold['km'],
         mode='markers',
         name='판매된 차량',
-        marker=dict(size=10, color='#ff7f0e'),
+        marker=dict(size=10, color='#ff7f0e'),  # safety orange
         text='판매된 차량'
     ))
 
@@ -30,7 +30,7 @@ def get_sold_scatter(sold, not_sold):
         y=not_sold['km'],
         mode='markers',
         name='구매 가능 차량',
-        marker=dict(size=10, color='#17becf'),
+        marker=dict(size=10, color='#17becf'),  # blue-teal
         text='구매 가능 차량'
     ))
 
