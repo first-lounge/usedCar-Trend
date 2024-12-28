@@ -28,7 +28,7 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 ## 아키텍처
 ![Architecture](./img/architecture.png)
 ### *Data Source*
-- [Kcar](https://www.kcar.com/bc/search)
+- Kcar - (https://www.kcar.com/bc/search)
 
 ### *Extract*
 - Selenium으로 동적 크롤링 및 BS4로 파싱 진행
