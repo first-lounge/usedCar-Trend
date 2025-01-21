@@ -37,7 +37,7 @@ def load(info):
 
     # 데이터 전처리
     final = info_transform(df)
-    final.to_csv(f'/home/hojae/crawling/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
+    final.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
 
     try:
         # crawling 테이블에 삽입
