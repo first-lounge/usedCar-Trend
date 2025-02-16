@@ -1,5 +1,7 @@
+import folium
+import pandas as pd
 import streamlit as st
-from utils.query import get_cnts, get_names
+from utils.query import get_cnts, get_names, get_map_datas
 from utils.graph import get_brand_bar, get_sold_pie, get_sold_scatter
 
 st.set_page_config(
@@ -22,7 +24,7 @@ def group_by_brand(tmp, brand_name):
     return tmp
 
 def main():
-    total, sold, daily, weekly = get_cnts()
+    total, sold, daily, weekly = get_cnts() # 총 대수, 총 판매량, 일간 판매량, 주간 판매량
     sold_car, not_sold_car = get_names()    # 판매된 차량, 구매 가능 차량
     brand_names = sold_car['brand'].unique().tolist()
 
@@ -45,38 +47,55 @@ def main():
         m3.metric("일간", f'{daily[0]}', f'{daily[0] - daily[1]}')
         m4.metric("주간", f'{weekly[0]}', f'{weekly[0] - weekly[1]}')
         
-        c1, c2 = st.columns([2.5,2])
+        c1, c2 = st.columns([2,3])
         filtered = group_by_brand(sold_car, "")
         
         # brand별 판매 개수
         with c1:
             st.subheader(':bar_chart: Top 10', divider='gray')
             st.plotly_chart(get_brand_bar(filtered[['brand', 'cnt']].drop_duplicates().nlargest(10, 'cnt')))
-            
 
         with c2:
-            ranks = filtered[['brand', 'cnt']].drop_duplicates().nlargest(10, 'cnt')
-            st.subheader(':pushpin: 구매 가능 브랜드 Top 10', divider="grey")
-            st.dataframe(
-                ranks,
-                column_order=('brand', 'cnt'),
-                hide_index=True,
-                column_config={
-                    'cnt': st.column_config.ProgressColumn(
-                        label="Count",
-                        format="%d",
-                        min_value=min(ranks['cnt']),
-                        max_value=max(ranks['cnt'])
-                    )
-                }
-            )
+            st.subheader(':world_map: Map(구매 가능 차량)', divider='gray')
 
-        #     # brand 별 평균 판매 가격
-        #     st.subheader(f':chart_with_upwards_trend: 주행거리별 가격 분포  ', divider="grey")
-        #     # scatter 차트
-        #     st.plotly_chart(get_not_sold_car_scatter(filtered_df))
+            lat, lng, names, cnts = get_map_datas() # 위도, 경도, 지역 이름, 차량 대수
+
+            # 지도 데이터
+            map_data = pd.DataFrame({
+                'lat': lat,
+                'lng': lng,
+                'name' : names,
+                'cnt' : cnts
+            })
+
+            # 지도 객체 생성
+            my_map = folium.Map(
+                location=[map_data['lat'].mean(), map_data['lng'].mean()], 
+                zoom_start=6)
+                
+            # 지도 커스텀
+            # 지도에 원형 마커와 값 추가
+            for index, row in map_data.iterrows():       # 데이터프레임 한 행 씩 처리
+
+                folium.CircleMarker(                     # 원 표시
+                    location=[row['lat'], row['lng']],   # 원 중심- 위도, 경도
+                    radius=9,             # 원의 반지름
+                    color='orange',                        # 원의 테두리 색상
+                    fill=True,                           # 원을 채움
+                    fill_opacity=1.0                     # 원의 내부를 채울 때의 투명도
+                ).add_to(my_map)                         # my_map에 원형 마커 추가
+
+                folium.Marker(                           # 값 표시
+                    location=[row['lat'], row['lng']],   # 값 표시 위치- 위도, 경도
+                    tooltip=row['name'],
+                    icon=folium.DivIcon(
+                        html=f"<div>{row['cnt']}</div>"), # 값 표시 방식
+                ).add_to(my_map)                         # my_map에 값 추가
+
+            # 지도 시각화
+            st.components.v1.html(my_map._repr_html_(), width=700, height=600)
         
-        st.subheader(':blue_car: 구매 가능 차량', divider='gray')
+        st.subheader(':blue_car: 구매 가능 차량 리스트', divider='gray')
         st.write(':moneybag: price(단위: 만원)')
         st.dataframe(not_sold_car.iloc[:, :7], hide_index=True, column_config={'url': st.column_config.LinkColumn()})
 
