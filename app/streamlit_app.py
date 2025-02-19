@@ -67,7 +67,7 @@ def main():
                 'name' : names,
                 'cnt' : cnts
             })
-
+            
             # 지도 객체 생성
             my_map = folium.Map(
                 location=[map_data['lat'].mean(), map_data['lng'].mean()], 
