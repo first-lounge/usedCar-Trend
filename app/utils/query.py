@@ -2,7 +2,6 @@ import pymysql
 import pandas as pd
 import streamlit as st
 from geopy.geocoders import Nominatim
-from collections import defaultdict
 
 # 지도에 표시할 나라 설정
 geo_local = Nominatim(user_agent='South Korea')
