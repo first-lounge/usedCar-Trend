@@ -173,7 +173,8 @@ def get_map_datas():
     cursor.execute(query)
     lists = cursor.fetchall()
 
-    areas = defaultdict(int)
+    areas = {'서울':0, '경기':0, '인천':0, '경남':0,
+                '경북':0, '전남':0, '전북':0, '충남':0, '충북':0, '제주':0, '강원':0}
     
     for item in lists:
         if item[0] == '전주':
