@@ -2,6 +2,7 @@ import pymysql
 import pandas as pd
 import streamlit as st
 from geopy.geocoders import Nominatim
+from collections import defaultdict
 
 # 지도에 표시할 나라 설정
 geo_local = Nominatim(user_agent='South Korea')
@@ -172,8 +173,7 @@ def get_map_datas():
     cursor.execute(query)
     lists = cursor.fetchall()
 
-    areas = {'서울':0, '경기':0, '인천':0, '경남':0,
-                '경북':0, '전남':0, '전북':0, '충남':0, '충북':0, '제주':0, '강원':0}
+    areas = defaultdict(int)
     
     for item in lists:
         if item[0] == '전주':
