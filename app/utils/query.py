@@ -215,6 +215,6 @@ def get_map_datas():
     for k in names:
         lat.append(geocoding(k)[0])
         lng.append(geocoding(k)[1])
-        cnts.append(areas[k][0])
+        cnts.append(areas[k])
     
     return lat, lng, names, cnts
