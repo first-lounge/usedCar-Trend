@@ -154,10 +154,14 @@ def get_names():
 def geocoding(addr):
     try:
         geo = geo_local.geocode(addr)
-        x_y = [geo.latitude, geo.longitude]
-        return x_y
+        if geo:
+            return [geo.latitude, geo.longitude]
+        # x_y = [geo.latitude, geo.longitude]
+        # return x_y
     except:
-        return [0,0]
+        pass
+        # return [0,0]
+    return [37.5665, 126.9780]
     
 @st.cache_data
 def get_map_datas():
@@ -212,9 +216,12 @@ def get_map_datas():
     lat, lng, cnts = [], [], []
     names = list(areas.keys())
 
+    # 좌표를 한 번만 가져와서 저장 후 사용
+    coords = {k: geocoding(k) for k in names}  
+
     for k in names:
-        lat.append(geocoding(k)[0])
-        lng.append(geocoding(k)[1])
+        lat.append(coords[k][0])
+        lng.append(coords[k][1])
         cnts.append(areas[k])
     
     return lat, lng, names, cnts
