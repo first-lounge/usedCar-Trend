@@ -1,3 +1,4 @@
+import time
 import pymysql 
 import pandas as pd
 import streamlit as st
@@ -153,6 +154,7 @@ def get_names():
 
 def geocoding(addr):
     try:
+        time.sleep(1)
         geo = geo_local.geocode(addr)
         if geo:
             return [geo.latitude, geo.longitude]
