@@ -4,6 +4,20 @@ import pandas as pd
 import streamlit as st
 from geopy.geocoders import Nominatim
 
+DEFAULT_COORDS = {
+    '서울': [37.5665, 126.9780],
+    '경기': [37.4363, 127.5508],
+    '인천': [37.4563, 126.7052],
+    '경남': [35.4606, 128.2132],
+    '경북': [36.4919, 128.8889],
+    '전남': [34.8679, 126.9910],
+    '전북': [35.7175, 127.1530],
+    '충남': [36.6588, 126.6728],
+    '충북': [36.6357, 127.4912],
+    '제주': [33.4996, 126.5312],
+    '강원': [37.8228, 128.1555],
+}
+
 # 지도에 표시할 나라 설정
 geo_local = Nominatim(user_agent='South Korea')
 
@@ -153,17 +167,21 @@ def get_names():
     return sold, not_sold
 
 def geocoding(addr):
-    try:
-        time.sleep(1)
-        geo = geo_local.geocode(addr)
-        if geo:
-            return [geo.latitude, geo.longitude]
-        # x_y = [geo.latitude, geo.longitude]
-        # return x_y
-    except:
-        pass
-        # return [0,0]
-    return [37.5665, 126.9780]
+    if addr in DEFAULT_COORDS:
+        return DEFAULT_COORDS[addr]
+    else:
+        return geocoding(addr)
+    # try:
+    #     time.sleep(1)
+    #     geo = geo_local.geocode(addr)
+    #     if geo:
+    #         return [geo.latitude, geo.longitude]
+    #     # x_y = [geo.latitude, geo.longitude]
+    #     # return x_y
+    # except:
+    #     pass
+    #     # return [0,0]
+    # return [37.5665, 126.9780]
     
 @st.cache_data
 def get_map_datas():
