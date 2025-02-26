@@ -154,12 +154,9 @@ def get_names():
 def geocoding(addr):
     try:
         geo = geo_local.geocode(addr)
-        x_y = [geo.latitude, geo.longitude]
-        return x_y
+        return [geo.latitude, geo.longitude]
     except:
-        pass
-        # return [0,0]
-    return [37.5665, 126.9780]
+        return [37.5665, 126.9780]
     
 @st.cache_data
 def get_map_datas():
