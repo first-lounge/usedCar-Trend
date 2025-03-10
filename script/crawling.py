@@ -156,9 +156,15 @@ car_info = []   # 크롤링한 자동차 데이터 저장할 리스트
 isLast = 0 # 마지막 페이지 체크
 page = 1    # 페이지 번호
 
+# 전체 자동차 개수
+html = driver.page_source   
+soup = BeautifulSoup(html, 'html.parser') 
+total = soup.find("h2", {"class" : "subTitle mt64 ft22"})
+total_KC = int(total.text.strip().split()[-1][:-1].replace(",", ""))
+
 # 크롤링 시작
 while True:
-    time.sleep(1.5)
+    time.sleep(2)
     CrawlingKcar(car_info)
 
     # 크롤링 에러 혹은 마지막 페이지인지 확인
@@ -167,14 +173,10 @@ while True:
     nextBtn = soup.find("div", {"class" : "paging"}).find_all("img")    
     paging = soup.find("div", {"class" : "paging"}).find_all("li")
     pages = dict(enumerate([int(*p.text.split()) for p in paging], start = 1))
-
+    
     try:
         if nextBtn[-1]['alt'] != '다음':
             print(nextBtn[-1]['alt'])
-
-            # 전체 자동차 개수
-            total = soup.find("h2", {"class" : "subTitle mt64 ft22"})
-            total_KC = int(total.text.strip().split()[-1][:-1].replace(",", ""))
             isLast = 1
             break
     except Exception as e:  # 크롤링 에러 발생 시
@@ -184,9 +186,8 @@ while True:
     
     # 페이지 이동
     page += 1
-    isLast = move_page(page)
 
-    if isLast == -1:
+    if move_page(page) == -1:
         break
 
 size = len(car_info)
