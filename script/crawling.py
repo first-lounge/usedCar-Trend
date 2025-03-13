@@ -190,12 +190,10 @@ while True:
     if move_page(page) == -1:
         break
 
-size = len(car_info)
-
 if isLast == 1:    
     print(f'Total Page : {page}')
     print(f'Total Car Cnt : {total_KC}')
-    print(f'crawled Data Cnt : {size}')
+    print(f'crawled Data Cnt : {len(car_info)}')
     
     # 크롤링한 데이터 전처리 및 SQL로 삽입
     load(car_info)
