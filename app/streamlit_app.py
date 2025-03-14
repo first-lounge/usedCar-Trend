@@ -70,7 +70,7 @@ def main():
             
             # 지도 객체 생성
             my_map = folium.Map(
-                location=[map_data['lat'].mean(), map_data['lng'].mean()], 
+                location=[map_data['lat'].mean()+1, map_data['lng'].mean()], 
                 zoom_start=6)
                 
             # 지도 커스텀
