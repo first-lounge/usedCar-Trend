@@ -8,7 +8,7 @@ local_tz = pendulum.timezone("Asia/Seoul")
 
 with DAG(
     dag_id="daily",
-    start_date=datetime(2025, 2, 17, tz=local_tz),
+    start_date=datetime(2025, 3, 17, tz=local_tz),
     schedule_interval='0 */8 * * *',
     catchup=False,
     email_on_failure=True,
@@ -19,7 +19,7 @@ with DAG(
 
     bash_t1 = BashOperator(
         task_id="bash_t1",
-        bash_command=f"cd /home/hojae/usedCar-Trend/script; python3 crawling.py"
+        bash_command=f"cd /root/usedCar-Trend/script; python3 crawling.py"
     )
 
     bash_t1
