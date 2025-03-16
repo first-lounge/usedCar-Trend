@@ -17,10 +17,7 @@ with DAG(
     dag_id="daily",
     default_args=default_args,
     start_date=datetime(2025, 3, 17, tzinfo=pendulum.timezone("Asia/Seoul")),   # 한국 시간 timezone 설정
-    schedule_interval='0 */8 * * *',
-    catchup=False,
-    retries=3,  # 실패 시, 3번 재시도
-    retry_delay=timedelta(minutes=5), # 재시도하는 시간 간격
+    catchup=False
 ) as dag:
     email_operator = EmailOperator(
         task_id='send_email',
