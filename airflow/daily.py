@@ -8,7 +8,7 @@ local_tz = pendulum.timezone("Asia/Seoul")
 
 with DAG(
     dag_id="daily",
-    start_date=datetime(2025, 3, 17, tz=local_tz),
+    start_date=datetime(2025, 3, 17, tzinfo=local_tz),
     schedule_interval='0 */8 * * *',
     catchup=False,
     email_on_failure=True,
