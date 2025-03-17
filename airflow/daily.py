@@ -6,7 +6,7 @@ from airflow.operators.bash import BashOperator
 default_args = {
     'email_on_retry': False,
     'email_on_failure': True,
-    'email': ['zxcz9878@email.com'],
+    'email': ['pirouette36@naver.com'],
     'retries': 3,  # 실패 시 최대 2번 재시도
     'retry_delay': timedelta(minutes=5),  # 재시도 간격
 }
