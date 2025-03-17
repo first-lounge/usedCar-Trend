@@ -21,7 +21,7 @@ with DAG(
 ) as dag:
     send = EmailOperator(
         task_id='send_email',
-        to='zxcz9878@gmail.com',
+        to='pirouette36@naver.com',
         subject='[TEST] 테스트 메일입니다.',
         html_content="""
                         테스트 메일입니다.<br/><br/> 
