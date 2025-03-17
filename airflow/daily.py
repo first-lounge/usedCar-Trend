@@ -1,31 +1,24 @@
 from airflow import DAG
-from datetime import datetime, timedelta
+from datetime import timedelta
 import pendulum
 from airflow.operators.bash import BashOperator
-from airflow.operators.email import EmailOperator
 
-# default_args = {
-#     'email_on_retry': False,
-#     'email_on_failure': True,
-#     'email' : ['zxcz9878@email.com']
-# }
+default_args = {
+    'email_on_retry': False,
+    'email_on_failure': True,
+    'email': ['zxcz9878@email.com'],
+    'retries': 3,  # 실패 시 최대 2번 재시도
+    'retry_delay': timedelta(minutes=5),  # 재시도 간격
+}
 
 with DAG(
     dag_id="daily",
-    # default_args=default_args,
-    start_date=pendulum.datetime(2025, 3, 17, tz="Asia/Seoul"),   # 한국 시간 timezone 설정
+    default_args=default_args,
+    start_date=pendulum.datetime(2025, 3, 17, tz="Asia/Seoul"),  # 한국 시간 timezone 설정,
+    schedule_interval="0 */6 * * *",
     catchup=False
 ) as dag:
     crawling = BashOperator(
         task_id="start_crawling",
-        bash_command=f"cd /root/usedCar-Trend/script; python3 tl_process.py"
+        bash_command="cd /root/usedCar-Trend/script; python3 crawling.py"
     )
-    send_email = EmailOperator(
-        task_id='error_email',
-        to='pirouette36@naver.com',
-        subject='크롤링 실패',
-        html_content='크롤링이 실패하였습니다.',
-        trigger_rule='one_failed'  # 이전 작업이 실패했을 때만 실행
-    )
-    
-    crawling >> send_email
