@@ -14,7 +14,7 @@ default_args = {
 with DAG(
     dag_id="daily",
     default_args=default_args,
-    start_date=pendulum.datetime(2025, 3, 17, tz="Asia/Seoul"),  # 한국 시간 timezone 설정,
+    start_date=pendulum.datetime(2025, 3, 18, tz="Asia/Seoul"),  # 한국 시간 timezone 설정,
     schedule_interval="0 */6 * * *",
     catchup=False
 ) as dag:
