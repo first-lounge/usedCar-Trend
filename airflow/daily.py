@@ -9,7 +9,7 @@ from airflow.operators.email import EmailOperator
 with DAG(
     dag_id="daily",
     # schedule="0 8 1 * *", # 매월 1일 8시
-    start_date=pendulum.datetime(2025, 3, 17, tzinfo=pendulum.timezone("Asia/Seoul")),
+    start_date=pendulum.datetime(2025, 3, 17, tz="Asia/Seoul"),
     catchup=False
 ) as dag:
     send_email = EmailOperator(
