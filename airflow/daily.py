@@ -4,33 +4,27 @@ import pendulum
 from airflow.operators.bash import BashOperator
 from airflow.operators.email import EmailOperator
 
-
+default_args = {
+    'email_on_retry': False,
+    'email_on_failure': True,
+    'email' : ['zxcz9878@email.com']
+}
 
 with DAG(
     dag_id="daily",
-    # schedule="0 8 1 * *", # 매월 1일 8시
-    start_date=pendulum.datetime(2025, 3, 17, tz="Asia/Seoul"),
+    default_args=default_args,
+    start_date=pendulum.datetime(2025, 3, 17, tzinfo=pendulum.timezone("Asia/Seoul")),   # 한국 시간 timezone 설정
     catchup=False
 ) as dag:
-    send_email = EmailOperator(
-        task_id='email_test',
-        to='pirouette36@naver.com', # 수신자
-        # cc= '참조'
-        subject='Airflow 성공메일', # 제목
-        html_content='Airflow 작업이 완료되었습니다' # 내용
+    crawling = BashOperator(
+        task_id="start_crawling",
+        bash_command=f"cd /root/usedCar-Trend/script; python3 tl_process.py"
     )
-
-send_email
-
-
-# with DAG(
-#     dag_id="daily",
-#     start_date=datetime(2025, 3, 17, tzinfo=pendulum.timezone("Asia/Seoul")),   # 한국 시간 timezone 설정
-#     catchup=False
-# ) as dag:
-    # crawling = BashOperator(
-    #     task_id="start_crawling",
-    #     bash_command=f"cd /root/usedCar-Trend/script; python3 crawling.py"
-    # )
-
-    # crawling
+    send_email = EmailOperator(
+        task_id='error_email',
+        to='pirouette36@naver.com',
+        subject='크롤링 실패',
+        html_content='크롤링이 실패하였습니다.',
+    )
+    
+    crawling >> send_email
