@@ -13,7 +13,7 @@ default_args = {
 with DAG(
     dag_id="daily",
     default_args=default_args,
-    start_date=pendulum.datetime(2025, 3, 17, tzinfo=pendulum.timezone("Asia/Seoul")),   # 한국 시간 timezone 설정
+    start_date=pendulum.datetime(2025, 3, 17, tz="Asia/Seoul"),   # 한국 시간 timezone 설정
     catchup=False
 ) as dag:
     crawling = BashOperator(
