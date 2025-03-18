@@ -156,12 +156,6 @@ car_info = []   # 크롤링한 자동차 데이터 저장할 리스트
 isLast = 0 # 마지막 페이지 체크
 page = 1    # 페이지 번호
 
-# 전체 자동차 개수
-html = driver.page_source   
-soup = BeautifulSoup(html, 'html.parser') 
-total = soup.find("h2", {"class" : "subTitle mt64 ft22"})
-total_KC = int(total.text.strip().split()[-1][:-1].replace(",", ""))
-
 # 크롤링 시작
 while True:
     time.sleep(2)
@@ -190,9 +184,14 @@ while True:
     if move_page(page) == -1:
         break
 
+# 전체 자동차 개수
+html = driver.page_source   
+soup = BeautifulSoup(html, 'html.parser') 
+total = int(soup.find("h2", {"class" : "subTitle mt64 ft22"}).text.strip().split()[-1][:-1].replace(",", ""))
+
 if isLast == 1:    
     print(f'Total Page : {page}')
-    print(f'Total Car Cnt : {total_KC}')
+    print(f'Total Car Cnt : {total}')
     print(f'crawled Data Cnt : {len(car_info)}')
     
     # 크롤링한 데이터 전처리 및 SQL로 삽입
