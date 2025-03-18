@@ -5,24 +5,23 @@ from datetime import datetime as dt
 from sqlalchemy import create_engine, text 
 
 def info_transform(df):
-    # 데이터프레임의 pc_type 컬럼에서 '할부 ... | 렌트 ...'로 있는 경우 처리
-    df['pc_type'] = df['pc_type'].str.split(' \| ')  # 문자열을 리스트로 분리
-    df = df.explode('pc_type').reset_index(drop=True)  # 리스트를 행으로 확장
+  # 데이터프레임의 pc_type 컬럼에서 '할부 ... | 렌트 ...'로 있는 경우 처리
+  df['pc_type'] = df['pc_type'].str.split(' \| ')  # 문자열을 리스트로 분리
+  df = df.explode('pc_type').reset_index(drop=True)  # 리스트를 행으로 확장
 
-    # price의 purchaset_type 값들을 [할부, 비용] 형식으로 리스트로 만든 후, 새 컬럼인 tmp에 삽입
-    df['pc_type'] = df['pc_type'].str.replace('만원','')
-    df[['pc_type', 'monthly_cost']] = df['pc_type'].str.split(' \월 ', expand=True)
-    df.drop('pc_type', axis=1, inplace=True)
+  # price의 purchaset_type 값들을 [할부, 비용] 형식으로 리스트로 만든 후, 새 컬럼인 tmp에 삽입
+  df['pc_type'] = df['pc_type'].str.replace('만원','')
+  df[['pc_type', 'monthly_cost']] = df['pc_type'].str.split(' \월 ', expand=True)
 
-    # price의 monthly_cost 컬럼 타입 변경 및 새로운 dataframe에 삽입
-    df['monthly_cost'] = df['monthly_cost'].astype(int)
+  # # # price의 monthly_cost 컬럼 타입 변경 및 새로운 dataframe에 삽입
+  df['monthly_cost'] = df['monthly_cost'].astype(int)
             
-    return df
+  return df
 
 def load(info):
     # sql 연결
     config = configparser.ConfigParser()
-    config.read('/root/settings.ini')
+    config.read('/root/usedCar-Trend/settings.ini')
 
     db_connections = f'mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}'
     engine = create_engine(db_connections, future=True)
@@ -30,14 +29,14 @@ def load(info):
 
     df = pd.DataFrame(data=info)
 
-    cnt = df.duplicated().sum()
-    if cnt:
-        print(f"Duplicated Data Exists : {cnt}")
+    if df.duplicated().sum():
+        print(f"Duplicated Data Exists : {df.duplicated().sum()}")
         df.drop_duplicates(inplace=True)
+
+    df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')   
 
     # 데이터 전처리
     final = info_transform(df)
-    final.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
 
     try:
         # crawling 테이블에 삽입
