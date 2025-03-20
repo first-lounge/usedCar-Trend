@@ -20,8 +20,7 @@ with DAG(
 ) as dag:
     crawling = BashOperator(
         task_id="start_crawling",
-        bash_command= "pwd"
-        # "cd /root; source proj/bin/activate; python3 usedCar-Trend/script/crawling.py"
+        bash_command= "bash -c 'cd /root && source proj/bin/activate && python3 usedCar-Trend/script/crawling.py'"
     )
 
     crawling
