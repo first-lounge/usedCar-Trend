@@ -13,7 +13,7 @@ def info_transform(df):
   df['pc_type'] = df['pc_type'].str.replace('만원','')
   df[['pc_type', 'monthly_cost']] = df['pc_type'].str.split(' \월 ', expand=True)
 
-  # # # price의 monthly_cost 컬럼 타입 변경 및 새로운 dataframe에 삽입
+  # price의 monthly_cost 컬럼 타입 변경 및 새로운 dataframe에 삽입
   df['monthly_cost'] = df['monthly_cost'].astype(int)
             
   return df
@@ -21,7 +21,7 @@ def info_transform(df):
 def load(info):
     # sql 연결
     config = configparser.ConfigParser()
-    config.read('/root/usedCar-Trend/settings.ini')
+    config.read('C:/Users/pirou/OneDrive/바탕 화면/중고차 매매 프로젝트/settings.ini')
 
     db_connections = f'mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}'
     engine = create_engine(db_connections, future=True)
@@ -33,11 +33,12 @@ def load(info):
         print(f"Duplicated Data Exists : {df.duplicated().sum()}")
         df.drop_duplicates(inplace=True)
 
-    df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')   
+    df.to_csv(f'C:/Users/pirou/OneDrive/바탕 화면/crawling/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')   
+    
 
     # 데이터 전처리
     final = info_transform(df)
-
+       
     try:
         # crawling 테이블에 삽입
         final.to_sql(name='crawling', con=engine, if_exists='append', index=False)
