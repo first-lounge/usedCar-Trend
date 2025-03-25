@@ -13,7 +13,7 @@ def info_transform(df):
   df['pc_type'] = df['pc_type'].str.replace('만원','')
   df[['pc_type', 'monthly_cost']] = df['pc_type'].str.split(' \월 ', expand=True)
 
-  # # # price의 monthly_cost 컬럼 타입 변경 및 새로운 dataframe에 삽입
+  # price의 monthly_cost 컬럼 타입 변경 및 새로운 dataframe에 삽입
   df['monthly_cost'] = df['monthly_cost'].astype(int)
             
   return df
@@ -34,10 +34,11 @@ def load(info):
         df.drop_duplicates(inplace=True)
 
     df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')   
+    
 
     # 데이터 전처리
     final = info_transform(df)
-
+       
     try:
         # crawling 테이블에 삽입
         final.to_sql(name='crawling', con=engine, if_exists='append', index=False)
