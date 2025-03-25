@@ -7,7 +7,7 @@ default_args = {
     'email_on_retry': False,
     'email_on_failure': True,
     'email': ['pirouette36@naver.com'],
-    'retries': 3,  # 실패 시 최대 2번 재시도
+    'retries': 3,  # 실패 시 최대 3번 재시도
     'retry_delay': timedelta(minutes=5),  # 재시도 간격
 }
 
@@ -20,7 +20,7 @@ with DAG(
 ) as dag:
     crawling = BashOperator(
         task_id="start_crawling",
-        bash_command= "python3 /root/usedCar-Trend/script/crawling.py"
+        bash_command= "set -e; python3 /root/usedCar-Trend/script/crawling.py"
     )
 
     crawling
