@@ -115,10 +115,17 @@ def move_page(p):
 chrome_options = webdriver.ChromeOptions()
 
 # 브라우저 창 숨기는 옵션
-chrome_options.add_argument('headless')
+chrome_options.add_argument("--headless")
 
-# 크롬 드라이버 최신 버전 설정
-service = Service(service=Service(ChromeDriverManager().install()))
+chrome_options.add_argument("--no-sandbox")
+
+chrome_options.add_argument("--disable-dev-shm-usage")
+
+# ChromeDriverManager로 ChromeDriver 경로 지정
+driver_path = ChromeDriverManager().install()
+
+# Chrome 드라이버 서비스 설정
+service = Service(driver_path)
 
 # driver 실행
 driver = webdriver.Chrome(service=service, options=chrome_options)
