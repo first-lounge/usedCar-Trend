@@ -23,7 +23,7 @@ def load(info):
     config = configparser.ConfigParser()
     config.read('/root/usedCar-Trend/settings.ini')
 
-    db_connections = f'mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}'
+    db_connections = f"mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}"
     engine = create_engine(db_connections, future=True)
     conn = engine.connect()
 
