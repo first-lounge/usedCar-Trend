@@ -2,16 +2,16 @@ import sys  # Airflow에서 실패 처리를 위해 추가
 from datetime import datetime as dt # 전처리 - model_year
 from tl_process import load   # 변환
 
-import pandas as pd
-import re   # 크롤링 - img url에서 자동차 id 추출
-import time # 크롤링
-from bs4 import BeautifulSoup   # 크롤링
-from selenium import webdriver  # 크롤링
-from selenium.webdriver.common.by import By # 크롤링
-from selenium.webdriver import ActionChains # 크롤링
-from selenium.webdriver.chrome.service import Service   # 크롤링
-from webdriver_manager.chrome import ChromeDriverManager    # 크롤링
-from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페이지 에러 발생
+# 크롤링
+import re   # img url에서 자동차 id 추출
+import time 
+from bs4 import BeautifulSoup   
+from selenium import webdriver  
+from selenium.webdriver.common.by import By 
+from selenium.webdriver import ActionChains 
+from selenium.webdriver.chrome.service import Service   
+from webdriver_manager.chrome import ChromeDriverManager    
+from selenium.common.exceptions import NoSuchElementException # 페이지 에러 발생
 
 # 케이카 직영중고차 크롤링
 def CrawlingKcar(page, result):
@@ -111,7 +111,6 @@ def move_page(p):
     action.click(button).perform()
     driver.implicitly_wait(10)
 
-start = time.time()
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
 
@@ -170,8 +169,6 @@ if isLast == 1:
     
     # 크롤링한 데이터 전처리 및 SQL로 삽입
     load(car_info)
-    end = time.time()
-    print(f'{end - start}sec')
 else:
     print("Crawling ERROR")
     print(f'isLast : {isLast}')
