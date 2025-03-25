@@ -1,8 +1,10 @@
+import sys  # Airflow에서 실패 처리를 위해 추가
+from datetime import datetime as dt # 전처리 - model_year
+from tl_process import load   # 변환
+
+import pandas as pd
 import re   # 크롤링 - img url에서 자동차 id 추출
 import time # 크롤링
-from datetime import datetime as dt # 전처리 - model_year
-
-from tl_process import load   # 변환
 from bs4 import BeautifulSoup   # 크롤링
 from selenium import webdriver  # 크롤링
 from selenium.webdriver.common.by import By # 크롤링
@@ -12,104 +14,78 @@ from webdriver_manager.chrome import ChromeDriverManager    # 크롤링
 from selenium.common.exceptions import NoSuchElementException # 크롤링 - 페이지 에러 발생
 
 # 케이카 직영중고차 크롤링
-def CrawlingKcar(tmp_info):
+def CrawlingKcar(page, result):
     html = driver.page_source   # html 파싱
     soup = BeautifulSoup(html, 'html.parser') 
     carIds = [] # 자동차 ID 저장 변수
 
-    # 자동차 ID & 정보 크롤링    
-    try:   
-        tmp = soup.find("div", {"class":"carListWrap"})
-        img = tmp.find_all("img", {"src":re.compile('https:\\/\\/[\\w.]+\\/([\\w]+|carpicture)')})   
-        carList = soup.find_all("div", {"class":"detailInfo srchTimedeal"})
-    except Exception as e:
-        print(e)
+    # 자동차 ID & 정보    
+    infos = soup.find("div", {"class":"resultCnt"})
+    imgs = infos.find_all("img", {"src":re.compile('https:\\/\\/[\\w.]+\\/([\\w]+|carpicture)')})   
+    carList = infos.find_all("div", {"class":"detailInfo srchTimedeal"})
 
     # img URL에서 자동차 ID 추출
-    for item in img:
-        if item['alt'] == "챠량이미지":
-            tmp = item['src'].split('/')
+    for img in imgs:
+        if img['alt'] == "챠량이미지":
+            tmp = img['src'].split('/')
             
             if len(tmp) == 10:
                 carIds.append(tmp[7].split('_')[0])
             else:
                 carIds.append(tmp[6].split('_')[1])
 
-    # tmp_info에 정보와 id를 담는다
+    # result에 정보와 id를 담는다
     for item, ids in zip(carList, carIds):
-        # 판매 url
-        url = "https://www.kcar.com/bc/detail/carInfoDtl?i_sCarCd=EC" + ids
+        try:
+            # 판매 url
+            url = "https://www.kcar.com/bc/detail/carInfoDtl?i_sCarCd=EC" + ids
 
-        # 자동차 id
-        carId = int(ids)
+            # 자동차 id
+            carId = int(ids)
 
-        # 자동차 이름
-        name = item.find("div", "carName").text.strip()
-        
-        # 매매관련 정보들
-        info = item.find("div", "carListFlex").text.strip().split('\n')
+            # 자동차 이름
+            name = item.find("div", {"class":"carName"}).text.strip()
 
-        price = int(info[0].strip().split()[0].replace(',', '').replace('만원', ''))   # 가격(단위: 만원)
-        details = info[1:]    # 세부사항들
-        pc_type = ""    # 할부, 렌트, 보증금 등등
-        model_year = ""   # 연식(단위: x년 x월식)
-        km = ""   # 키로수(단위: xkm)
-        fuel = ""   # 연료
-        area = ""   # 판매 지역
-        crawled_at = dt.today().strftime("%Y-%m-%d") # 크롤링 시작 시각
+            # 가격(단위: 만원)
+            price = int(item.find("p", {"class":"carExp"}).get_text().split()[0].replace(",", "").replace("만원", ""))
 
-        # 할부 여부 체크
-        if len(details) > 1:
-            tmp = details[1].strip().split()
+            # 판매 방식(할부, 렌트, 리스 등)
+            # ex) 할부 월xx만원 | 렌트 월xx만원
+            pc_type = " | ".join([tmp.get_text().lstrip() for tmp in item.find("ul", {"class":"carPayMeth"}).find_all("span", {"class":"el-link--inner"})])
 
-            pc_type = details[0].strip() + ' | ' + tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
+            # 세부 사항
+            detail = item.find("p", {"class":"detailCarCon"}).find_all("span")
 
-            try:
-                model_year = tmp[3] + ' ' + tmp[4]
-            except:
-                print(f'{name}\n{info}')
-                
-            km = tmp[5][:-2]
-            fuel = tmp[6]
-            area = tmp[7]
-        else:
-            tmp = details[0].strip().split()
+            # 연식(단위: x년 x월식) - (xx년형) 제거 및 xx-xx 형식으로 변경
+            tmp = detail[0].text[:detail[0].text.find('식')].replace("년 ", "-").replace("월","")
+            model_year= dt.strptime(tmp, '%y-%m').date().strftime("%Y-%m")
+
+            # 키로수(단위: xkm) - 천단위 콤마 제거 및 정수로 형변환
+            km = int(detail[1].text.replace('km', '').replace(',', ''))   
             
-            if tmp[0] == '할부':
-                pc_type = tmp[0] + ' ' + tmp[1] + ' ' + tmp[2]
-                model_year = tmp[3] + ' ' + tmp[4]
-                km = tmp[5][:-2]
-                fuel = tmp[6]
-                area = tmp[7]
-            else:
-                model_year = tmp[0] + ' ' + tmp[1]
-                km = tmp[2][:-2]
-                fuel = tmp[3]
-                area = tmp[4]
+            fuel = detail[2].text   # 연료
+            
+            area = detail[3].text   # 판매 지역
+            
+            crawled_at = dt.today().strftime("%Y-%m-%d") # 크롤링 시작 시각
 
-        # 거리 - 천단위 콤마 제거 및 정수로 형변환
-        km = int(km.replace(',', ''))
-
-        # 연식 - (xx년형) 제거 및 xx-xx 형식으로 변경
-        tmp_idx = model_year.find('(')
-        if tmp_idx != -1:  model_year = model_year[:tmp_idx]
+            result.append({
+                                "id" : carId,
+                                "name": name, 
+                                "price": price,
+                                "pc_type": pc_type,
+                                "model_year": model_year,
+                                "km": km,
+                                "fuel": fuel,
+                                "area": area,
+                                "url" : url,
+                                "crawled_at" : crawled_at
+                                })
+        except Exception as e:  # 크롤링 에러 발생 시
+            print(f"{page}page")
+            print(e)
+            sys.exit(1)
         
-        model_year = model_year.replace("년 ", "-").replace("월식","")
-        tmp_year = dt.strptime(model_year, '%y-%m').date()
-        model_year = tmp_year.strftime("%Y-%m")
-
-        tmp_info.append({
-                            "id" : carId,
-                            "name": name, 
-                            "price": price,
-                            "pc_type": pc_type,
-                            "model_year": model_year,
-                            "km": km,
-                            "fuel": fuel,
-                            "area": area,
-                            "url" : url,
-                            "crawled_at" : crawled_at
-                            })
 
 # 페이지 이동
 def move_page(p):
@@ -135,7 +111,7 @@ def move_page(p):
     action.click(button).perform()
     driver.implicitly_wait(10)
 
-
+start = time.time()
 # 옵션 생성
 chrome_options = webdriver.ChromeOptions()
 
@@ -149,19 +125,20 @@ service = Service(service=Service(ChromeDriverManager().install()))
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 # 해당 주소의 웹페이지로 이동
-driver.get('https://www.kcar.com/bc/search') 
+driver.get("https://www.kcar.com/bc/search") 
 driver.implicitly_wait(10)
 
-car_info = []   # 크롤링한 자동차 데이터 저장할 리스트
-isLast = 0 # 마지막 페이지 체크
-page = 1    # 페이지 번호
+car_info = []   # 크롤링 데이터 저장하는 리스트
+isLast = 0 # 마지막 페이지인지 체크
+page = 1    # 페이지
+total = 0   # 전체 자동차 개수
 
 # 크롤링 시작
 while True:
     time.sleep(2)
-    CrawlingKcar(car_info)
-
-    # 크롤링 에러 혹은 마지막 페이지인지 확인
+    CrawlingKcar(page, car_info)
+    
+    # 마지막 페이지인지 확인
     html = driver.page_source   
     soup = BeautifulSoup(html, 'html.parser') 
     nextBtn = soup.find("div", {"class" : "paging"}).find_all("img")    
@@ -170,6 +147,8 @@ while True:
     
     try:
         if nextBtn[-1]['alt'] != '다음':
+            total = int(soup.find("h2", {"class" : "subTitle mt64 ft22"}).find("span", {"class":"textRed"}).text.strip().replace(',', ''))
+
             print(nextBtn[-1]['alt'])
             isLast = 1
             break
@@ -184,11 +163,6 @@ while True:
     if move_page(page) == -1:
         break
 
-# 전체 자동차 개수
-html = driver.page_source   
-soup = BeautifulSoup(html, 'html.parser') 
-total = int(soup.find("h2", {"class" : "subTitle mt64 ft22"}).text.strip().split()[-1][:-1].replace(",", ""))
-
 if isLast == 1:    
     print(f'Total Page : {page}')
     print(f'Total Car Cnt : {total}')
@@ -196,9 +170,12 @@ if isLast == 1:
     
     # 크롤링한 데이터 전처리 및 SQL로 삽입
     load(car_info)
+    end = time.time()
+    print(f'{end - start}sec')
 else:
     print("Crawling ERROR")
     print(f'isLast : {isLast}')
     print(f'Page Error At {page} ')
+    sys.exit(1)
 
 driver.quit()
