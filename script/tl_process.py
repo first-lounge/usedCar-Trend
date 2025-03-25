@@ -33,8 +33,7 @@ def load(info):
         print(f"Duplicated Data Exists : {df.duplicated().sum()}")
         df.drop_duplicates(inplace=True)
 
-    df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')   
-    
+    df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')       
 
     # 데이터 전처리
     final = info_transform(df)
