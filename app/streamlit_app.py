@@ -47,7 +47,7 @@ def main():
         m3.metric("일간", f'{daily[0]}', f'{daily[0] - daily[1]}')
         m4.metric("주간", f'{weekly[0]}', f'{weekly[0] - weekly[1]}')
         
-        c1, c2 = st.columns([2,3])
+        c1, c2 = st.columns([3,3])
         filtered = group_by_brand(sold_car, "")
         
         # brand별 판매 개수
