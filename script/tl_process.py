@@ -21,7 +21,7 @@ def info_transform(df):
 def load(info):
     # sql 연결
     config = configparser.ConfigParser()
-    config.read('/root/usedCar-Trend/settings.ini')
+    config.read('C:/Users/pirou/OneDrive/바탕 화면/중고차 매매 프로젝트/settings.ini')
 
     db_connections = f"mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}"
     engine = create_engine(db_connections, future=True)
@@ -32,8 +32,6 @@ def load(info):
     if df.duplicated().sum():
         print(f"Duplicated Data Exists : {df.duplicated().sum()}")
         df.drop_duplicates(inplace=True)
-
-    df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')       
 
     # 데이터 전처리
     final = info_transform(df)
@@ -94,12 +92,25 @@ def load(info):
             )
         """
         conn.execute(text(query4))
-        
-        # 모든 과정을 마친 후 crawling 테이블 전체 초기화
+
         query5 = """
-        TRUNCATE TABLE crawling
+        UPDATE sales_list sl
+        SET sl.is_sold = 0, sl.sold_at = null
+        WHERE 
+            sl.is_sold = 1
+            AND EXISTS(
+                SELECT 1
+                FROM crawling
+                WHERE crawling.id = sl.id
+            )
         """
         conn.execute(text(query5))
+
+        # 모든 과정을 마친 후 crawling 테이블 전체 초기화
+        query6 = """
+        TRUNCATE TABLE crawling
+        """
+        conn.execute(text(query6))
 
         conn.commit()
         conn.close()
