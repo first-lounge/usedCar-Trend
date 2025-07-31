@@ -19,22 +19,29 @@ def info_transform(df):
   return df
 
 def load(info):
-    # sql 연결
-    config = configparser.ConfigParser()
-    config.read('C:/Users/pirou/OneDrive/바탕 화면/중고차 매매 프로젝트/settings.ini')
-
-    db_connections = f"mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}"
-    engine = create_engine(db_connections, future=True)
-    conn = engine.connect()
-
     df = pd.DataFrame(data=info)
 
     if df.duplicated().sum():
         print(f"Duplicated Data Exists : {df.duplicated().sum()}")
         df.drop_duplicates(inplace=True)
 
+    if (df.isnull().sum() > 0).any():
+        print(f"Null Data Exists : {df.isnull().sum()}")
+        df.dropna(inplace=True)
+
+    df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')      
+
     # 데이터 전처리
     final = info_transform(df)
+
+    # DB 연결 및 삽입
+    config = configparser.ConfigParser()
+    config.read('/root/usedCar-Trend/settings.ini')
+
+    db_connections = f"mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}"
+
+    engine = create_engine(db_connections, future=True)
+    conn = engine.connect()
        
     try:
         # crawling 테이블에 삽입
