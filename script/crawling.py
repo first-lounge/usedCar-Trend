@@ -105,7 +105,7 @@ def move_page(p):
     try:
         button = driver.find_element(By.XPATH, f'//*[@id="app"]/div[2]/div[2]/div[2]/div[4]/div[1]/div[7]/div/ul/li[{tmp}]')
         
-    except NoSuchElementException as e: # 크롤링 중간에 오류 발생한 경우
+    except NoSuchElementException: # 오류 발생 or 마지막 페이지인 경우
         return -1
 
     action.click(button).perform()
@@ -141,7 +141,7 @@ total = 0   # 전체 자동차 개수
 
 # 크롤링 시작
 while True:
-    time.sleep(2)
+    time.sleep(1.5)
     CrawlingKcar(page, car_info)
     
     # 마지막 페이지인지 확인
@@ -170,7 +170,7 @@ while True:
         break
 
 if isLast == 1:    
-    print(f'Total Page : {page}')
+    print(f'Total Page : {page - 1}')
     print(f'Total Car Cnt : {total}')
     print(f'crawled Data Cnt : {len(car_info)}')
     
@@ -178,7 +178,6 @@ if isLast == 1:
     load(car_info)
 else:
     print("Crawling ERROR")
-    print(f'isLast : {isLast}')
     print(f'Page Error At {page} ')
     sys.exit(1)
 
