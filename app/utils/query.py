@@ -16,6 +16,8 @@ t2 = st.secrets["db"]["t2_name"]
 t3 = st.secrets["db"]["t3_name"]
 
 def get_total_cnt():  
+    result = {}
+
     query = f"""
     SELECT COUNT(*) 
     FROM `{t1}`
@@ -23,28 +25,33 @@ def get_total_cnt():
     ON `{t1}`.id = `{t2}`.id
     WHERE `{t2}`.is_sold = 0
     """
-
-    cursor.execute(query)
-    cnt = [cursor.fetchall()[0][0]]
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result["total"] = cursor.fetchone()[0]
 
     query2 = f"""
     SELECT COUNT(*)
     FROM `{t2}`
     WHERE crawled_at = CURDATE()
     """
-    cursor.execute(query2)
-    cnt.append(cursor.fetchall()[0][0])
+    with conn.cursor() as cursor:
+        cursor.execute(query2)
+        result["today"] = cursor.fetchone()[0]
 
-    return cnt
+    return result
 
 def get_sold_cnt():
     query = f"""SELECT COUNT(*) FROM `{t2}` WHERE is_sold = 1"""
-    cursor.execute(query)
-    cnt = cursor.fetchall()[0][0]
-
+    
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        cnt = cursor.fetchone()[0]
+    
     return cnt
 
 def get_daily_cnt():
+    result = {}
+
     query = f"""
     SELECT COUNT(*)
     FROM `{t2}`
@@ -52,9 +59,9 @@ def get_daily_cnt():
         is_sold = 1
         AND sold_at = CURDATE()
     """
-
-    cursor.execute(query)
-    cnt = [cursor.fetchall()[0][0]]
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result["today"] = cursor.fetchone()[0]
 
     query2 = f"""
     SELECT COUNT(*)
@@ -63,40 +70,54 @@ def get_daily_cnt():
         is_sold = 1
         AND sold_at = DATE(CURDATE() - INTERVAL 1 DAY)
     """
-    cursor.execute(query2)
-    cnt.append(cursor.fetchall()[0][0])
 
-    return cnt
+    with conn.cursor() as cursor:
+        cursor.execute(query2)
+        result["yesterday"] = cursor.fetchone()[0]
+
+    return result
 
 def get_weekly_cnt():
+    result = {}
+
+    # 이번 주 (월요일 시작)
     query = f"""
-    SELECT COUNT(*)
-    FROM `{t1}` m
-    join `{t2}` s
+    select 
+        CAST(DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) DAY) AS CHAR) AS week_start,  
+        CONCAT(LPAD(WEEK(DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) DAY), 7), 2, '0')) AS week_num,
+        count(m.id) as cnt
+    from `{t1}` m
+    left join `{t2}` s
     on m.id = s.id
-    WHERE
-        s.is_sold = 1
-        AND s.sold_at >= DATE(CURDATE() - INTERVAL 7 DAY)
-        AND s.sold_at < CURDATE()
+    where 
+        is_sold = 1 
+        and DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) DAY) = DATE_SUB(sold_at, INTERVAL WEEKDAY(sold_at) DAY)
+    group by 
+        week_start, 
+        week_num
     """
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        result["week_start"], result["week_num"], result["this_week"] = cursor.fetchone()
 
-    cursor.execute(query)
-    cnt = [cursor.fetchall()[0][0]]
-
+    # 저번 주
     query2 = f"""
-    SELECT COUNT(*)
-    FROM `{t1}` m
-    join `{t2}` s
+    select 
+    count(m.id) as cnt
+    from `{t1}` m
+    left join `{t2}` s
     on m.id = s.id
-    WHERE
-        s.is_sold = 1
-        AND s.sold_at >= DATE(CURDATE() - INTERVAL 7 DAY)
-        AND s.sold_at < DATE(CURDATE() - INTERVAL 1 DAY)
+    where 
+        sold_at BETWEEN DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) + 7 DAY) 
+                and DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) + 1 DAY)
+        and is_sold = 1
     """
-    cursor.execute(query2)
-    cnt.append(cursor.fetchall()[0][0])
 
-    return cnt
+    with conn.cursor() as cursor:
+        cursor.execute(query2)
+        result["last_week"] = cursor.fetchone()[0]
+
+    return result
 
 def get_cnts():
     total = get_total_cnt()
@@ -160,16 +181,17 @@ def geocoding(addr):
     
 @st.cache_data
 def get_map_datas():
-    query = """
+    query = f"""
         select area, count(*)
-        from main m
-        join sales_list s
+        from `{t1}` m
+        join `{t2}` s
         on m.id = s.id
         where is_sold = 0
         group by area
     """
-    cursor.execute(query)
-    lists = cursor.fetchall()
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        lists = cursor.fetchall()
 
     areas = {'서울':0, '경기':0, '인천':0, '경남':0,
                 '경북':0, '전남':0, '전북':0, '충남':0, '충북':0, '제주':0, '강원':0}
