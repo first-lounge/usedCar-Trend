@@ -42,10 +42,14 @@ def main():
         st.title(":oncoming_automobile: K Car 직영중고차 대시보드")
             
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("구매 가능 차량 수", f'{total[0]}', f'{total[1]}')
-        m2.metric("전체 판매량", f'{sold}', f'{daily[0]}')
-        m3.metric("일간", f'{daily[0]}', f'{daily[0] - daily[1]}')
-        m4.metric("주간", f'{weekly[0]}', f'{weekly[0] - weekly[1]}')
+        m1.metric("구매 가능 차량 수", f'{total["total"]}', f'{round(total["today"] / total["total"] * 100, 1)}%')
+        m2.metric("전체 판매량", f'{sold}', f'{round((daily["today"] / sold) * 100, 1)}%')
+        m3.metric("일간", f'{daily["today"]}', f'{round((daily["today"] - daily["yesterday"]) / daily["yesterday"] * 100, 1)}%')
+
+        # ZeroDivisionError 처리
+        percent = round((weekly["this_week"] - weekly["last_week"]) / weekly["last_week"] * 100, 1) if weekly["last_week"] != 0 else 0
+        
+        m4.metric(f"{weekly["week_num"]}주차 (시작 날짜 : {weekly["week_start"]})", f'{weekly["this_week"]}', f'{percent}%')
         
         c1, c2 = st.columns([3,3])
         filtered = group_by_brand(sold_car, "")
@@ -56,7 +60,7 @@ def main():
             st.plotly_chart(get_brand_bar(filtered[['brand', 'cnt']].drop_duplicates().nlargest(10, 'cnt')))
 
         with c2:
-            st.subheader(':world_map: Map(구매 가능 차량)', divider='gray')
+            st.subheader(':world_map: 구매 가능 지역', divider='gray')
 
             lat, lng, names, cnts = get_map_datas() # 위도, 경도, 지역 이름, 차량 대수
 
@@ -95,7 +99,7 @@ def main():
             # 지도 시각화
             st.components.v1.html(my_map._repr_html_(), width=700, height=600)
         
-        st.subheader(':blue_car: 구매 가능 차량 리스트', divider='gray')
+        st.subheader(':blue_car: 구매 가능 차량', divider='gray')
         st.write(':moneybag: price(단위: 만원)')
         st.dataframe(not_sold_car.iloc[:, :7], hide_index=True, column_config={'url': st.column_config.LinkColumn()})
 
@@ -141,7 +145,7 @@ def main():
             km = round(sold_car[sold_car['names'] == car_name_selected]['km'].mean())
 
             m1, m2, m3, m4 = st.columns(4)
-            m1.metric("구매 가능 차량 수", f'{sold}')
+            m1.metric("판매된 차량 수", f'{sold}')
             m2.metric("구매 가능 차량 수", f'{not_sold}')
             m3.metric("평균 가격(단위: 만원)", f'{avg_price}')
             m4.metric("평균 KM", f'{format(km, ',d')}')
