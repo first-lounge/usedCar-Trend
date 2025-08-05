@@ -98,7 +98,12 @@ def get_weekly_cnt():
     """
     with conn.cursor() as cursor:
         cursor.execute(query)
-        result["week_start"], result["week_num"], result["this_week"] = cursor.fetchone()
+        tmp = cursor.fetchone()
+        if tmp:
+            result["week_start"], result["week_num"], result["this_week"] = tmp
+        else:
+            result["week_start"], result["week_num"], result["this_week"] = None, None, None
+
 
     # 저번 주
     query2 = f"""
