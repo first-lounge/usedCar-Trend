@@ -44,12 +44,16 @@ def main():
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("구매 가능 차량 수", f'{total["total"]}', f'{round(total["today"] / total["total"] * 100, 1)}%')
         m2.metric("전체 판매량", f'{sold}', f'{round((daily["today"] / sold) * 100, 1)}%')
-        m3.metric("일간", f'{daily["today"]}', f'{round((daily["today"] - daily["yesterday"]) / daily["yesterday"] * 100, 1)}%')
-
-        # ZeroDivisionError 처리
-        percent = round((weekly["this_week"] - weekly["last_week"]) / weekly["last_week"] * 100, 1) if weekly["last_week"] != 0 else 0
         
-        m4.metric(f"{weekly["week_num"]}주차 (시작 날짜 : {weekly["week_start"]})", f'{weekly["this_week"]}', f'{percent}%')
+        # Daily 증감률 ZeroDivisionError 처리
+        daily_percent = round((daily["today"] - daily["yesterday"]) / daily["yesterday"] * 100, 1) if daily["yesterday"] != 0 else 0
+        
+        m3.metric("일간", f'{daily["today"]}', f'{daily_percent}%')
+
+        # Weekly 증감률 ZeroDivisionError 처리
+        weekly_percent = round((weekly["this_week"] - weekly["last_week"]) / weekly["last_week"] * 100, 1) if weekly["last_week"] != 0 else 0
+        
+        m4.metric(f"{weekly["week_num"]}주차 (시작 날짜 : {weekly["week_start"]})", f'{weekly["this_week"]}', f'{weekly_percent}%')
         
         c1, c2 = st.columns([3,3])
         filtered = group_by_brand(sold_car, "")
