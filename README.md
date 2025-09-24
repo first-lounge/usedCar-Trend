@@ -2,9 +2,11 @@
 중고차 매매 데이터 추출 파이프라인 구축 프로젝트
 
 ## 프로젝트 소개
-Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파이프라인 구축 및 시각화하였습니다.
+Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파이프라인을 구축하고 시각화를 진행하였습니다.
+또한, 미니 PC 기반의 홈서버 환경을 구축하고, 해당 서버에 Streamlit 애플리케이션을 배포하였습니다.
 
 ## 프로젝트 구성
+홈페이지 URL : https://car.hbksv.cloud/
 <details>
   <summary>홈페이지 동작 화면</summary>
   <img src=https://github.com/user-attachments/assets/73128ab5-4139-4e03-803b-11e65835a62f>
@@ -29,6 +31,7 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 ![ERD](./img/db_schema.png)
 
 ## 인프라 아키텍처
+![Infra](./img/infra.png)
 
 ## 아키텍처
 ![Architecture](./img/architect.png)
