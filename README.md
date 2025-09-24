@@ -30,10 +30,11 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 ## ERD 다이어그램
 ![ERD](./img/db_schema.png)
 
-## 인프라 아키텍처
+## 아키텍처
+### *인프라*
 ![Infra](./img/infra.png)
 
-## 아키텍처
+### *데이터 파이프라인*
 ![Architecture](./img/architect.png)
 ### *Data Source*
 - Kcar - (https://www.kcar.com/bc/search)
