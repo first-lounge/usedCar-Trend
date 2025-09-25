@@ -1,14 +1,17 @@
 import pymysql 
 import pandas as pd
 import streamlit as st
-from geopy.geocoders import Nominatim
 
-# 지도에 표시할 나라 설정
-geo_local = Nominatim(user_agent='South Korea')
-
-# sql 연결
-conn = pymysql.connect(db=st.secrets['pymysql']['database'], host=st.secrets['pymysql']['host'], user=st.secrets['pymysql']['username'], passwd=st.secrets['pymysql']['password'], charset=st.secrets['pymysql']['charset'])
-cursor = conn.cursor()
+# 함수로 DB 연결
+def get_connection():
+    return pymysql.connect(
+        db=st.secrets['pymysql']['database'],
+        host=st.secrets['pymysql']['host'],
+        user=st.secrets['pymysql']['username'],
+        passwd=st.secrets['pymysql']['password'],
+        charset=st.secrets['pymysql']['charset'],
+        autocommit=True  # 최신 데이터 바로 조회 가능
+    )
 
 # table
 t1 = st.secrets["db"]["t1_name"]
@@ -17,36 +20,35 @@ t3 = st.secrets["db"]["t3_name"]
 
 def get_total_cnt():  
     result = {}
-
     query = f"""
     SELECT COUNT(*) 
-    FROM `{t1}`
-    JOIN `{t2}`
-    ON `{t1}`.id = `{t2}`.id
+    FROM `{t1}` 
+    JOIN `{t2}` 
+    ON `{t1}`.id = `{t2}`.id 
     WHERE `{t2}`.is_sold = 0
     """
+    query2 = f" SELECT COUNT(*) FROM `{t2}` WHERE crawled_at = CURDATE()"
+    
+    conn = get_connection()
     with conn.cursor() as cursor:
         cursor.execute(query)
         result["total"] = cursor.fetchone()[0]
 
-    query2 = f"""
-    SELECT COUNT(*)
-    FROM `{t2}`
-    WHERE crawled_at = CURDATE()
-    """
-    with conn.cursor() as cursor:
         cursor.execute(query2)
         result["today"] = cursor.fetchone()[0]
 
+    conn.close()
     return result
 
 def get_sold_cnt():
     query = f"""SELECT COUNT(*) FROM `{t2}` WHERE is_sold = 1"""
     
+    conn = get_connection()
     with conn.cursor() as cursor:
         cursor.execute(query)
         cnt = cursor.fetchone()[0]
     
+    conn.close()
     return cnt
 
 def get_daily_cnt():
@@ -59,22 +61,21 @@ def get_daily_cnt():
         is_sold = 1
         AND sold_at = CURDATE()
     """
+    query2 = f"""
+    SELECT COUNT(*)
+    FROM `{t2}`
+    WHERE is_sold = 1
+        AND sold_at = DATE(CURDATE() - INTERVAL 1 DAY)
+    """
+    conn = get_connection()
     with conn.cursor() as cursor:
         cursor.execute(query)
         result["today"] = cursor.fetchone()[0]
 
-    query2 = f"""
-    SELECT COUNT(*)
-    FROM `{t2}`
-    WHERE 
-        is_sold = 1
-        AND sold_at = DATE(CURDATE() - INTERVAL 1 DAY)
-    """
-
-    with conn.cursor() as cursor:
         cursor.execute(query2)
         result["yesterday"] = cursor.fetchone()[0]
 
+    conn.close()
     return result
 
 def get_weekly_cnt():
@@ -96,15 +97,7 @@ def get_weekly_cnt():
         week_start, 
         week_num
     """
-    with conn.cursor() as cursor:
-        cursor.execute(query)
-        tmp = cursor.fetchone()
-        if tmp:
-            result["week_start"], result["week_num"], result["this_week"] = tmp
-        else:
-            result["week_start"], result["week_num"], result["this_week"] = None, None, None
-
-
+    
     # 저번 주
     query2 = f"""
     select 
@@ -118,10 +111,19 @@ def get_weekly_cnt():
         and is_sold = 1
     """
 
+    conn = get_connection()
     with conn.cursor() as cursor:
+        cursor.execute(query)
+        tmp = cursor.fetchone()
+        if tmp:
+            result["week_start"], result["week_num"], result["this_week"] = tmp
+        else:
+            result["week_start"], result["week_num"], result["this_week"] = None, None, None
+
         cursor.execute(query2)
         result["last_week"] = cursor.fetchone()[0]
 
+    conn.close()
     return result
 
 def get_cnts():
@@ -133,7 +135,9 @@ def get_cnts():
     return total, sold, daily, weekly
 
 def get_names():
-    query = f"""
+    conn = get_connection()
+
+    query_sold = f"""
         SELECT 
             DISTINCT m.name, 
             p.price,
@@ -150,11 +154,7 @@ def get_names():
         ON m.id = s.id
         WHERE s.is_sold = 1
     """
-    sold = pd.read_sql(query, conn)
-    sold['brand'] = sold['name'].str.split().str[0]
-    sold['names'] = sold['name'].str.split().str[1:5].str.join(' ')
-
-    query2 = f"""
+    query_not_sold = f"""
         SELECT 
             DISTINCT m.name, 
             p.price,
@@ -171,21 +171,23 @@ def get_names():
         ON m.id = s.id
         WHERE s.is_sold = 0
     """
-    not_sold = pd.read_sql(query2, conn)
+
+    sold = pd.read_sql(query_sold, conn)
+    sold['brand'] = sold['name'].str.split().str[0]
+    sold['names'] = sold['name'].str.split().str[1:5].str.join(' ')
+
+
+    not_sold = pd.read_sql(query_not_sold, conn)
     not_sold['brand'] = not_sold['name'].str.split().str[0]
     not_sold['names'] = not_sold['name'].str.split().str[1:5].str.join(' ')
 
+    conn.close()
     return sold, not_sold
 
-def geocoding(addr):
-    try:
-        geo = geo_local.geocode(addr)
-        return [geo.latitude, geo.longitude]
-    except:
-        return [37.5665, 126.9780]
-    
-@st.cache_data
+@st.cache_data(ttl=4*60*60)
 def get_map_datas():
+    conn = get_connection()
+    
     query = f"""
         select area, count(*)
         from `{t1}` m
@@ -194,12 +196,28 @@ def get_map_datas():
         where is_sold = 0
         group by area
     """
+    
     with conn.cursor() as cursor:
         cursor.execute(query)
         lists = cursor.fetchall()
+    conn.close()
 
     areas = {'서울':0, '경기':0, '인천':0, '경남':0,
                 '경북':0, '전남':0, '전북':0, '충남':0, '충북':0, '제주':0, '강원':0}
+    
+    area_coords = {
+    '서울': [37.5665, 126.9780],   # 서울특별시청
+    '경기': [37.2753, 127.0090],   # 경기도청
+    '인천': [37.4563, 126.7052],   # 인천광역시청
+    '경남': [35.1968, 128.0355],   # 경상남도청
+    '경북': [36.5762, 128.6230],   # 경상북도청
+    '전남': [34.8161, 126.4627],   # 전라남도청
+    '전북': [35.8206, 127.1086],   # 전라북도청
+    '충남': [36.6580, 126.6720],   # 충청남도청
+    '충북': [36.6353, 127.4910],   # 충청북도청
+    '제주': [33.5006, 126.5312],   # 제주특별자치도청
+    '강원': [37.8813, 127.7298]    # 강원도청
+    }
     
     for item in lists:
         if item[0] == '전주':
@@ -236,14 +254,10 @@ def get_map_datas():
             areas['경기'] += item[1]
 
     lat, lng, cnts = [], [], []
-    names = list(areas.keys())
 
-    # 좌표를 한 번만 가져와서 저장 후 사용
-    coords = {k: geocoding(k) for k in names}  
-
-    for k in names:
-        lat.append(coords[k][0])
-        lng.append(coords[k][1])
-        cnts.append(areas[k])
+    for key, val in area_coords.items():
+        lat.append(val[0])
+        lng.append(val[1])
+        cnts.append(areas[key])
     
-    return lat, lng, names, cnts
+    return lat, lng, list(area_coords.keys()), cnts
