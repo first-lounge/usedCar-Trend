@@ -83,7 +83,7 @@ def main():
                 
             # 지도 커스텀
             # 지도에 원형 마커와 값 추가
-            for index, row in map_data.iterrows():       # 데이터프레임 한 행 씩 처리
+            for _, row in map_data.iterrows():       # 데이터프레임 한 행 씩 처리
 
                 folium.CircleMarker(                     # 원 표시
                     location=[row['lat'], row['lng']],   # 원 중심- 위도, 경도
