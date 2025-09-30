@@ -5,8 +5,16 @@
 Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파이프라인을 구축하고 시각화를 진행하였습니다.<br>
 또한, 미니 PC 기반의 홈서버 환경을 구축하고, 해당 서버에 Streamlit 애플리케이션을 배포하였습니다.
 
+## 아키텍처
+### *인프라*
+URL(홈서버 기반) : https://car.hbksv.cloud/
+![Infra](./img/infra.png)
+
+### *데이터 파이프라인*
+![Architecture](./img/architect.png)
+
 ## 프로젝트 구성
-홈페이지 URL : https://car.hbksv.cloud/
+(아래는 네이버 클라우드 사용했을 때의 화면입니다.)
 <details>
   <summary>홈페이지 동작 화면</summary>
   <img src=https://github.com/user-attachments/assets/73128ab5-4139-4e03-803b-11e65835a62f>
@@ -30,12 +38,6 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 ## ERD 다이어그램
 ![ERD](./img/db_schema.png)
 
-## 아키텍처
-### *인프라*
-![Infra](./img/infra.png)
-
-### *데이터 파이프라인*
-![Architecture](./img/architect.png)
 ### *Data Source*
 - Kcar - (https://www.kcar.com/bc/search)
 
