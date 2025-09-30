@@ -8,7 +8,7 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 ## 아키텍처
 ### *인프라*
 URL(홈서버 기반) : https://car.hbksv.cloud/
-![Infra](./img/infras.png)
+![Infra](./img/infra.png)
 
 ### *데이터 파이프라인*
 ![Architecture](./img/architect.png)
