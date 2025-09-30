@@ -14,7 +14,7 @@ URL(홈서버 기반) : https://car.hbksv.cloud/
 ![Architecture](./img/architect.png)
 
 ## 프로젝트 구성
-(아래는 네이버 클라우드 사용했을 때의 화면입니다.)
+(아래의 화면들은 네이버 클라우드를 사용했을 때입니다.)
 <details>
   <summary>홈페이지 동작 화면</summary>
   <img src=https://github.com/user-attachments/assets/73128ab5-4139-4e03-803b-11e65835a62f>
