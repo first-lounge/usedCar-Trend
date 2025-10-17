@@ -1,8 +1,14 @@
-import pymysql
-import configparser   # ini 파일 읽기
+import os
 import pandas as pd 
+from pathlib import Path
 from datetime import datetime as dt
+from configparser import ConfigParser   # ini 파일 읽기
 from sqlalchemy import create_engine, text 
+
+BASE_DIR = Path(__file__).resolve().parent.parent  # crawling.py 상위 폴더
+config_path = BASE_DIR / 'settings.ini'
+config = ConfigParser()
+config.read(config_path, encoding='utf-8')
 
 def info_transform(df):
   # 데이터프레임의 pc_type 컬럼에서 '할부 ... | 렌트 ...'로 있는 경우 처리
@@ -29,99 +35,92 @@ def load(info):
         print(f"Null Data Exists : {df.isnull().sum()}")
         df.dropna(inplace=True)
 
-    df.to_csv(f'/root/usedCar-Trend/data/carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')      
+    save_path = os.path.join(config['paths']['data_dir'], f'carInfos_{dt.now().strftime("%Y%m%d%H")}.csv')
+    df.to_csv(save_path)       
 
     # 데이터 전처리
     final = info_transform(df)
 
     # DB 연결 및 삽입
-    config = configparser.ConfigParser()
-    config.read('/root/usedCar-Trend/settings.ini')
-
     db_connections = f"mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}"
-
     engine = create_engine(db_connections, future=True)
-    conn = engine.connect()
-       
-    try:
-        # crawling 테이블에 삽입
-        final.to_sql(name='crawling', con=engine, if_exists='append', index=False)
+    
+    with engine.begin() as conn:  # with 블록 안에서 commit/rollback 자동 관리        
+        try:
+            # crawling 테이블에 삽입
+            final.to_sql(name='crawling', con=engine, if_exists='append', index=False)
 
-        # crawling 테이블과 main 테이블 비교 후, main 테이블에 없는 값들 삽입
-        query1 = """
-        INSERT INTO main(id, name, model_year, km, fuel, area, url)
-        SELECT DISTINCT id, name, model_year, km, fuel, area, url
-        FROM crawling
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM main
-            WHERE main.id = crawling.id
-        )
-        """
-        conn.execute(text(query1))
-
-        # crawling 테이블과 price_info 테이블 비교 후, price_info 테이블에 없는 값들 삽입
-        query2 = """
-        INSERT INTO price_info(id, pc_type, monthly_cost, price)
-        SELECT id, pc_type, monthly_cost, price
-        FROM crawling
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM price_info
-            WHERE price_info.id = crawling.id
-        )
-        """
-        conn.execute(text(query2))
-
-        # crawling 테이블과 sales_list 테이블 비교 후, sales_list에 없는 값들 삽입
-        query3 = """
-        INSERT INTO sales_list(id, crawled_at)
-        SELECT DISTINCT id, crawled_at
-        FROM crawling
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM sales_list
-            WHERE sales_list.id = crawling.id
-        )
-        """
-        conn.execute(text(query3))
-
-        # sales_list 테이블과 crawling 테이블 비교 후, is_sold 컬럼 업데이트
-        query4 = """
-        UPDATE sales_list sl
-        SET sl.is_sold = 1, sl.sold_at = CURDATE()
-        WHERE 
-            sl.is_sold = 0 
-            AND NOT EXISTS(
+            # crawling 테이블과 main 테이블 비교 후, main 테이블에 없는 값들 삽입
+            query1 = """
+            INSERT INTO main(id, name, model_year, km, fuel, area, url)
+            SELECT DISTINCT id, name, model_year, km, fuel, area, url
+            FROM crawling
+            WHERE NOT EXISTS (
                 SELECT 1
-                FROM crawling
-                WHERE crawling.id = sl.id
+                FROM main
+                WHERE main.id = crawling.id
             )
-        """
-        conn.execute(text(query4))
+            """
+            conn.execute(text(query1))
 
-        query5 = """
-        UPDATE sales_list sl
-        SET sl.is_sold = 0, sl.sold_at = null
-        WHERE 
-            sl.is_sold = 1
-            AND EXISTS(
+            # crawling 테이블과 price_info 테이블 비교 후, price_info 테이블에 없는 값들 삽입
+            query2 = """
+            INSERT INTO price_info(id, pc_type, monthly_cost, price)
+            SELECT id, pc_type, monthly_cost, price
+            FROM crawling
+            WHERE NOT EXISTS (
                 SELECT 1
-                FROM crawling
-                WHERE crawling.id = sl.id
+                FROM price_info
+                WHERE price_info.id = crawling.id
             )
-        """
-        conn.execute(text(query5))
+            """
+            conn.execute(text(query2))
 
-        # 모든 과정을 마친 후 crawling 테이블 전체 초기화
-        query6 = """
-        TRUNCATE TABLE crawling
-        """
-        conn.execute(text(query6))
+            # crawling 테이블과 sales_list 테이블 비교 후, sales_list에 없는 값들 삽입
+            query3 = """
+            INSERT INTO sales_list(id, crawled_at)
+            SELECT DISTINCT id, crawled_at
+            FROM crawling
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM sales_list
+                WHERE sales_list.id = crawling.id
+            )
+            """
+            conn.execute(text(query3))
 
-        conn.commit()
-        conn.close()
-        engine.dispose()
-        
-    except Exception as e:
-        print(f'오류 발생 : {e} ')
+            # sales_list 테이블과 crawling 테이블 비교 후, is_sold 컬럼 업데이트
+            query4 = """
+            UPDATE sales_list sl
+            SET is_sold = TRUE, sold_at = CURRENT_DATE
+            WHERE 
+                is_sold = FALSE 
+                AND NOT EXISTS(
+                    SELECT 1
+                    FROM crawling
+                    WHERE crawling.id = sl.id
+                )
+            """
+            conn.execute(text(query4))
+
+            query5 = """
+            UPDATE sales_list sl
+            SET is_sold = FALSE, sold_at = null
+            WHERE 
+                is_sold = TRUE
+                AND EXISTS(
+                    SELECT 1
+                    FROM crawling
+                    WHERE crawling.id = sl.id
+                )
+            """
+            conn.execute(text(query5))
+
+            # 모든 과정을 마친 후 crawling 테이블 전체 초기화
+            query6 = """
+            TRUNCATE TABLE crawling
+            """
+            conn.execute(text(query6))
+
+        except Exception as e:
+            print(f'오류 발생 : {e} ')
