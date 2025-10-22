@@ -118,7 +118,7 @@ def load(info):
 
             # 모든 과정을 마친 후 crawling 테이블 전체 초기화
             query6 = """
-            TRUNCATE TABLE crawling
+            DELETE TABLE crawling
             """
             conn.execute(text(query6))
 
