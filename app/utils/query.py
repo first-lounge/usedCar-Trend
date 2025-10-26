@@ -1,17 +1,17 @@
-import pymysql 
+import psycopg2
 import pandas as pd
 import streamlit as st
 
 # 함수로 DB 연결
 def get_connection():
-    return pymysql.connect(
-        db=st.secrets['pymysql']['database'],
-        host=st.secrets['pymysql']['host'],
-        user=st.secrets['pymysql']['username'],
-        passwd=st.secrets['pymysql']['password'],
-        charset=st.secrets['pymysql']['charset'],
-        autocommit=True  # 최신 데이터 바로 조회 가능
+    conn = psycopg2.connect(
+        dbname=st.secrets['psql']['database'],
+        host=st.secrets['psql']['host'],
+        user=st.secrets['psql']['username'],
+        password=st.secrets['psql']['password']
     )
+    conn.autocommit=True  # 최신 데이터 바로 조회 가능
+    return conn
 
 # table
 t1 = st.secrets["db"]["t1_name"]
@@ -22,12 +22,12 @@ def get_total_cnt():
     result = {}
     query = f"""
     SELECT COUNT(*) 
-    FROM `{t1}` 
-    JOIN `{t2}` 
-    ON `{t1}`.id = `{t2}`.id 
-    WHERE `{t2}`.is_sold = 0
+    FROM "{t1}" 
+    JOIN "{t2}" 
+    ON "{t1}".id = "{t2}".id 
+    WHERE "{t2}".is_sold = FALSE
     """
-    query2 = f" SELECT COUNT(*) FROM `{t2}` WHERE crawled_at = CURDATE()"
+    query2 = f""" SELECT COUNT(*) FROM "{t2}" WHERE crawled_at = CURRENT_DATE"""
     
     conn = get_connection()
     with conn.cursor() as cursor:
@@ -41,7 +41,7 @@ def get_total_cnt():
     return result
 
 def get_sold_cnt():
-    query = f"""SELECT COUNT(*) FROM `{t2}` WHERE is_sold = 1"""
+    query = f"""SELECT COUNT(*) FROM "{t2}" WHERE is_sold = TRUE"""
     
     conn = get_connection()
     with conn.cursor() as cursor:
@@ -56,16 +56,16 @@ def get_daily_cnt():
 
     query = f"""
     SELECT COUNT(*)
-    FROM `{t2}`
+    FROM "{t2}"
     WHERE 
-        is_sold = 1
-        AND sold_at = CURDATE()
+        is_sold = TRUE
+        AND sold_at = CURRENT_DATE
     """
     query2 = f"""
     SELECT COUNT(*)
-    FROM `{t2}`
-    WHERE is_sold = 1
-        AND sold_at = DATE(CURDATE() - INTERVAL 1 DAY)
+    FROM "{t2}"
+    WHERE is_sold = TRUE
+        AND sold_at = CURRENT_DATE - INTERVAL '1 day'
     """
     conn = get_connection()
     with conn.cursor() as cursor:
@@ -83,32 +83,32 @@ def get_weekly_cnt():
 
     # 이번 주 (월요일 시작)
     query = f"""
-    select 
-        CAST(DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) DAY) AS CHAR) AS week_start,  
-        CONCAT(LPAD(WEEK(DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) DAY), 7), 2, '0')) AS week_num,
-        count(m.id) as cnt
-    from `{t1}` m
-    left join `{t2}` s
-    on m.id = s.id
-    where 
-        is_sold = 1 
-        and DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) DAY) = DATE_SUB(sold_at, INTERVAL WEEKDAY(sold_at) DAY)
-    group by 
-        week_start, 
+    SELECT
+        DATE_TRUNC('week', CURRENT_DATE)::DATE AS week_start,
+        LPAD(TO_CHAR(DATE_TRUNC('week', CURRENT_DATE), 'WW'), 2, '0') AS week_num,
+        COUNT(m.id) as cnt
+    FROM "{t1}" m
+    LEFT JOIN "{t2}" s
+    ON m.id = s.id
+    WHERE
+        s.is_sold = TRUE
+        AND DATE_TRUNC('week', s.sold_at) = DATE_TRUNC('week', CURRENT_DATE)
+    GROUP BY
+        week_start,
         week_num
     """
     
     # 저번 주
     query2 = f"""
-    select 
-    count(m.id) as cnt
-    from `{t1}` m
-    left join `{t2}` s
-    on m.id = s.id
-    where 
-        sold_at BETWEEN DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) + 7 DAY) 
-                and DATE_SUB(current_date(), INTERVAL WEEKDAY(current_date()) + 1 DAY)
-        and is_sold = 1
+    SELECT
+        COUNT(m.id) AS cnt
+    FROM
+        "{t1}" m
+    LEFT JOIN
+        "{t2}" s ON m.id = s.id
+    WHERE
+        s.is_sold = TRUE
+        AND DATE_TRUNC('week', s.sold_at) = DATE_TRUNC('week', CURRENT_DATE - INTERVAL '1 week')
     """
 
     conn = get_connection()
@@ -147,12 +147,12 @@ def get_names():
             m.area,
             m.url,
             s.is_sold
-        FROM `{t1}` m
-        JOIN `{t3}` p
+        FROM "{t1}" m
+        JOIN "{t3}" p
         ON m.id = p.id
-        JOIN `{t2}` s
+        JOIN "{t2}" s
         ON m.id = s.id
-        WHERE s.is_sold = 1
+        WHERE s.is_sold = TRUE
     """
     query_not_sold = f"""
         SELECT 
@@ -164,12 +164,12 @@ def get_names():
             m.area,
             m.url,
             s.is_sold
-        FROM `{t1}` m
-        JOIN `{t3}` p
+        FROM "{t1}" m
+        JOIN "{t3}" p
         ON m.id = p.id
-        JOIN `{t2}` s
+        JOIN "{t2}" s
         ON m.id = s.id
-        WHERE s.is_sold = 0
+        WHERE s.is_sold = FALSE
     """
 
     sold = pd.read_sql(query_sold, conn)
@@ -189,12 +189,14 @@ def get_map_datas():
     conn = get_connection()
     
     query = f"""
-        select area, count(*)
-        from `{t1}` m
-        join `{t2}` s
-        on m.id = s.id
-        where is_sold = 0
-        group by area
+        SELECT 
+            area, 
+            COUNT(*)
+        FROM "{t1}" m
+        JOIN "{t2}" s
+        ON m.id = s.id
+        WHERE s.is_sold = FALSE
+        GROUP BY area
     """
     
     with conn.cursor() as cursor:
