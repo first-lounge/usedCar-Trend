@@ -42,85 +42,98 @@ def load(info):
     final = info_transform(df)
 
     # DB 연결 및 삽입
-    db_connections = f"mysql+pymysql://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}"
+    db_connections = f"postgresql+psycopg2://{config['db_info']['user']}:{config['db_info']['passwd']}@{config['db_info']['host']}/{config['db_info']['db']}?{config['db_info']['charset']}"
     engine = create_engine(db_connections, future=True)
-    
+
     with engine.begin() as conn:  # with 블록 안에서 commit/rollback 자동 관리        
         try:
             # crawling 테이블에 삽입
             final.to_sql(name='crawling', con=engine, if_exists='append', index=False)
 
-            # crawling 테이블과 main 테이블 비교 후, main 테이블에 없는 값들 삽입
+            # crawling 테이블과 main 테이블 비교 후, 신규 차량만 삽입
+            # 만약, 이전에 판매된 차량 중 id를 재활용하여 새로운 차량이 등록된 경우, 
+            # 해당 차량 정보들을 변경하여 저장
             query1 = """
             INSERT INTO main(id, name, model_year, km, fuel, area, url)
             SELECT DISTINCT id, name, model_year, km, fuel, area, url
             FROM crawling
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM main
-                WHERE main.id = crawling.id
-            )
+            ON CONFLICT (id) DO UPDATE
+            SET
+                name    = EXCLUDED.name,
+                model_year = EXCLUDED.model_year,
+                km         = EXCLUDED.km,
+                fuel       = EXCLUDED.fuel,
+                area       = EXCLUDED.area,
+                url        = EXCLUDED.url
             """
             conn.execute(text(query1))
 
-            # crawling 테이블과 price_info 테이블 비교 후, price_info 테이블에 없는 값들 삽입
+            # 이전에 등록된 차량의 정보가 크롤링한 데이터와 다르면 판매되었다고 판단
+            # 이후, crawling 테이블에 존재하지 않는 차량의 정보들은 삭제
             query2 = """
-            INSERT INTO price_info(id, pc_type, monthly_cost, price)
-            SELECT id, pc_type, monthly_cost, price
-            FROM crawling
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM price_info
-                WHERE price_info.id = crawling.id
-            )
+            DELETE FROM price_info p
+            WHERE
+                p.id IN (SELECT DISTINCT id FROM crawling)
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM crawling c
+                    WHERE c.id = p.id AND c.pc_type = p.pc_type
+                )
             """
             conn.execute(text(query2))
 
-            # crawling 테이블과 sales_list 테이블 비교 후, sales_list에 없는 값들 삽입
+            # crawling 테이블의 모든 데이터를 price_info로 삽입
+            # 만약, 존재한다면 새로운 값으로 업데이트
             query3 = """
-            INSERT INTO sales_list(id, crawled_at)
-            SELECT DISTINCT id, crawled_at
+            INSERT INTO price_info (id, pc_type, monthly_cost, price)
+            SELECT DISTINCT id, pc_type, monthly_cost, price
             FROM crawling
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM sales_list
-                WHERE sales_list.id = crawling.id
-            )
+            ON CONFLICT (id, pc_type) DO UPDATE 
+            SET
+                monthly_cost = EXCLUDED.monthly_cost,
+                price = EXCLUDED.price
             """
             conn.execute(text(query3))
 
-            # sales_list 테이블과 crawling 테이블 비교 후, is_sold 컬럼 업데이트
+            # crawling 테이블과 sales_list 테이블 비교 후, 신규 차량만 삽입
             query4 = """
-            UPDATE sales_list sl
-            SET is_sold = TRUE, sold_at = CURRENT_DATE
-            WHERE 
-                is_sold = FALSE 
-                AND NOT EXISTS(
-                    SELECT 1
-                    FROM crawling
-                    WHERE crawling.id = sl.id
-                )
+            INSERT INTO sales_list(id, crawled_at)
+            SELECT DISTINCT id, crawled_at
+            FROM crawling
+            ON CONFLICT (id) DO NOTHING
             """
             conn.execute(text(query4))
 
+            # 이전 목록에 있었지만 판매된 차량을 '판매 완료'로 처리
             query5 = """
-            UPDATE sales_list sl
-            SET is_sold = FALSE, sold_at = null
+            UPDATE sales_list s
+            SET is_sold = TRUE, sold_at = CURRENT_DATE
             WHERE 
-                is_sold = TRUE
-                AND EXISTS(
+                s.is_sold = FALSE 
+                AND NOT EXISTS(
                     SELECT 1
-                    FROM crawling
-                    WHERE crawling.id = sl.id
+                    FROM crawling c
+                    WHERE c.id = s.id
                 )
             """
             conn.execute(text(query5))
-
-            # 모든 과정을 마친 후 crawling 테이블 전체 초기화
+            
+            # 이전에 판매된 차량이지만, 같은 id로 등록된 새로운 차량의 상태를 '판매 중'으로 복원
             query6 = """
-            DELETE TABLE crawling
+            UPDATE sales_list s
+            SET is_sold = FALSE, crawled_at = CURRENT_DATE, sold_at = NULL
+            FROM crawling c
+            WHERE 
+                s.is_sold = TRUE
+                AND s.id = c.id
             """
             conn.execute(text(query6))
+
+            # 모든 과정을 마친 후 crawling 테이블 전체 초기화
+            query7 = """
+            DELETE FROM crawling
+            """
+            conn.execute(text(query7))
 
         except Exception as e:
             print(f'오류 발생 : {e} ')
