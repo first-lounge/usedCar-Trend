@@ -84,7 +84,7 @@ def get_weekly_cnt():
     # 이번 주 (월요일 시작)
     query = f"""
     SELECT
-        DATE_TRUNC('week', CURRENT_DATE)::DATE AS week_start,
+        DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Seoul'))::DATE AS week_start,
         LPAD(TO_CHAR(DATE_TRUNC('week', CURRENT_DATE), 'WW'), 2, '0') AS week_num,
         COUNT(m.id) as cnt
     FROM "{t1}" m
