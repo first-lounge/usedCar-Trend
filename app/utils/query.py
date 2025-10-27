@@ -83,19 +83,29 @@ def get_weekly_cnt():
 
     # 이번 주 (월요일 시작)
     query = f"""
+    WITH current_week AS (
+        -- 1. 먼저 '이번 주'의 기준(시작일, 주차)을 딱 1행 만듭니다.
+        SELECT 
+            DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Seoul'))::DATE AS week_start,
+            LPAD(TO_CHAR((NOW() AT TIME ZONE 'Asia/Seoul'), 'WW'), 2, '0') AS week_num
+    )
     SELECT
-        DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Seoul'))::DATE AS week_start,
-        LPAD(TO_CHAR(DATE_TRUNC('week', CURRENT_DATE), 'WW'), 2, '0') AS week_num,
-        COUNT(m.id) as cnt
-    FROM "{t1}" m
-    LEFT JOIN "{t2}" s
-    ON m.id = s.id
-    WHERE
-        s.is_sold = TRUE
-        AND DATE_TRUNC('week', s.sold_at) = DATE_TRUNC('week', CURRENT_DATE)
+        w.week_start,
+        w.week_num,
+        -- 3. 's.id'의 개수를 셉니다. (데이터가 없으면 0이 됨)
+        COUNT(s.id) as cnt
+    FROM 
+        current_week w  -- 2. 이 기준(w)을 왼쪽에 두고 (무조건 1행)
+    LEFT JOIN (
+        -- 4. 실제 판매 데이터를 오른쪽에 붙입니다.
+        SELECT m.id, s.sold_at
+        FROM "{t1}" m
+        JOIN "{t2}" s ON m.id = s.id
+        WHERE s.is_sold = TRUE
+    ) s ON DATE_TRUNC('week', s.sold_at AT TIME ZONE 'Asia/Seoul') = w.week_start
     GROUP BY
-        week_start,
-        week_num
+        w.week_start,
+        w.week_num
     """
     
     # 저번 주
@@ -108,17 +118,14 @@ def get_weekly_cnt():
         "{t2}" s ON m.id = s.id
     WHERE
         s.is_sold = TRUE
-        AND DATE_TRUNC('week', s.sold_at) = DATE_TRUNC('week', CURRENT_DATE - INTERVAL '1 week')
+        AND DATE_TRUNC('week', s.sold_at AT TIME ZONE 'Asia/Seoul') = 
+        DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Seoul') - INTERVAL '1 week')
     """
 
     conn = get_connection()
     with conn.cursor() as cursor:
         cursor.execute(query)
-        tmp = cursor.fetchone()
-        if tmp:
-            result["week_start"], result["week_num"], result["this_week"] = tmp
-        else:
-            result["week_start"], result["week_num"], result["this_week"] = None, None, None
+        result["week_start"], result["week_num"], result["this_week"] = cursor.fetchone()
 
         cursor.execute(query2)
         result["last_week"] = cursor.fetchone()[0]
