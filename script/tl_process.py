@@ -107,7 +107,7 @@ def load(info):
             # 이전 목록에 있었지만 판매된 차량을 '판매 완료'로 처리
             query5 = """
             UPDATE sales_list s
-            SET is_sold = TRUE, sold_at = (now() AT TIME ZONE 'Asia/Seoul')::DATE
+            SET is_sold = TRUE, sold_at = (NOW() AT TIME ZONE 'Asia/Seoul')::DATE
             WHERE 
                 s.is_sold = FALSE 
                 AND NOT EXISTS(
@@ -121,7 +121,7 @@ def load(info):
             # 이전에 판매된 차량이지만, 같은 id로 등록된 새로운 차량의 상태를 '판매 중'으로 복원
             query6 = """
             UPDATE sales_list s
-            SET is_sold = FALSE, crawled_at = (now() AT TIME ZONE 'Asia/Seoul')::DATE, sold_at = NULL
+            SET is_sold = FALSE, crawled_at = (NOW() AT TIME ZONE 'Asia/Seoul')::DATE, sold_at = NULL
             FROM crawling c
             WHERE 
                 s.is_sold = TRUE
