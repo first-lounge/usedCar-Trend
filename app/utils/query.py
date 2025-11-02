@@ -27,7 +27,7 @@ def get_total_cnt():
     ON "{t1}".id = "{t2}".id 
     WHERE "{t2}".is_sold = FALSE
     """
-    query2 = f""" SELECT COUNT(*) FROM "{t2}" WHERE crawled_at = (NOW() AT TIME ZONE 'Asia/Seoul')"""
+    query2 = f""" SELECT COUNT(*) FROM "{t2}" WHERE crawled_at = (NOW() AT TIME ZONE 'Asia/Seoul')::DATE"""
     
     conn = get_connection()
     with conn.cursor() as cursor:
@@ -59,13 +59,13 @@ def get_daily_cnt():
     FROM "{t2}"
     WHERE 
         is_sold = TRUE
-        AND sold_at = (NOW() AT TIME ZONE 'Asia/Seoul')
+        AND sold_at = (NOW() AT TIME ZONE 'Asia/Seoul')::DATE
     """
     query2 = f"""
     SELECT COUNT(*)
     FROM "{t2}"
     WHERE is_sold = TRUE
-        AND sold_at = (NOW() AT TIME ZONE 'Asia/Seoul') - INTERVAL '1 day'
+        AND sold_at = (NOW() AT TIME ZONE 'Asia/Seoul')::DATE - INTERVAL '1 day'
     """
     conn = get_connection()
     with conn.cursor() as cursor:
@@ -86,7 +86,7 @@ def get_weekly_cnt():
     WITH current_week AS (
         SELECT 
             DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Seoul'))::DATE AS week_start,
-            LPAD(TO_CHAR((NOW() AT TIME ZONE 'Asia/Seoul'), 'WW'), 2, '0') AS week_num
+            LPAD(TO_CHAR((NOW() AT TIME ZONE 'Asia/Seoul')::DATE, 'WW'), 2, '0') AS week_num
     )
     SELECT
         w.week_start,
@@ -116,7 +116,7 @@ def get_weekly_cnt():
     WHERE
         s.is_sold = TRUE
         AND DATE_TRUNC('week', s.sold_at) = 
-        DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Seoul') - INTERVAL '1 week')
+        DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Seoul')::DATE - INTERVAL '1 week')
     """
 
     conn = get_connection()
