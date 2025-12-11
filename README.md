@@ -6,9 +6,6 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 또한, 미니 PC 기반의 홈서버 환경을 구축하고, 해당 서버에 Streamlit 애플리케이션을 배포하였습니다.
 
 ## 아키텍처
-### *인프라*
-![Infra](./img/infra.png)
-
 ### *데이터 파이프라인*
 ![Architecture](./img/architect.png)
 
