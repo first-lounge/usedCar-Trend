@@ -10,7 +10,6 @@ Kcar 사이트에서 중고차 매매 데이터를 크롤링하여 데이터 파
 ![Architecture](./img/architect.png)
 
 ## 프로젝트 구성
-(아래의 화면들은 네이버 클라우드를 사용했을 때입니다.)
 <details>
   <summary>홈페이지 동작 화면</summary>
   <img src=https://github.com/user-attachments/assets/73128ab5-4139-4e03-803b-11e65835a62f>
